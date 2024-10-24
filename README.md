@@ -24,6 +24,7 @@ Data Retrieval (SQL, MongoDB, SPARQL) →
 Deployment (Docker, Kubernetes) →
 Analytics (Predictive Models, Visualization Tools)
 
+
 ##### Problem statement
 We are a company that provides predictive insights to suppliers by forecasting the optimal quantity of raw materials they should produce. Our solution leverages data from intermediate manufacturing processes and retail performance to deliver precise, data-driven recommendations, helping suppliers align their production plans with actual market demand, minimize waste, and optimize inventory management.
 
