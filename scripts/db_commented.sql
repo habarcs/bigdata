@@ -139,11 +139,12 @@ CREATE STREAM OrdersStream (
 
 
 CREATE STREAM InventoryStream (
-    InventoryID STRING,
+    InventoryID STRING KEY,
     ProductID STRING,
     QuantityOnHand INT,
-    ReorderLevel INT,
-    Location STRING
+    Longitude STRING, 
+    Latitude STRING,
+    InventoryStatus STRING  -- New: Inventory status (e.g., In Stock, Out of Stock)
 ) WITH (
     KAFKA_TOPIC = 'inventory_status',
     VALUE_FORMAT = 'JSON'
