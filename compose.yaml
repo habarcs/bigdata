@@ -1,0 +1,19 @@
+---
+name: BestBigDataProject
+
+services:
+  kafka:
+    image: apache/kafka-native:3.8.1 # use graalvm image for faster startup
+    ports:
+      - "9092:9092"
+
+  sql-database:
+    image: postgres:17.0
+    shm_size: 128mb
+    volumes: # set up shared memory for speed
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 134217728
+    environment:
+      POSTGRES_PASSWORD: supersecret
