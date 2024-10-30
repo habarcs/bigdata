@@ -1,5 +1,5 @@
 ---
-name: BestBigDataProject
+name: best_big_data_project
 
 services:
   kafka:

@@ -1,159 +1,101 @@
-CREATE TABLE Suppliers (
-    SupplierID STRING PRIMARY KEY,
-    SupplierName STRING,
-    ContactName STRING,
-    ContactEmail STRING,
-    ContactPhone STRING,
-    Address STRING,
-    City STRING,
-    State STRING,
-    ZipCode STRING,
-    Country STRING,
-    Rating INT
-) WITH (
-    KAFKA_TOPIC='suppliers',
-    VALUE_FORMAT='JSON',
-    KEY='SupplierID'
+CREATE TABLE Suppliers
+(
+    SupplierID   bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    SupplierName text    NOT NULL,
+    ContactName  text    NOT NULL,
+    ContactEmail text    NOT NULL,
+    ContactPhone text    NOT NULL,
+    Address      text    NOT NULL,
+    City         text    NOT NULL,
+    State        text    NOT NULL,
+    ZipCode      text    NOT NULL,
+    Country      text    NOT NULL,
+    Rating       integer NOT NULL
 );
 
-CREATE TABLE Manufacturers (
-    ManufacturerID STRING PRIMARY KEY,
-    ManufacturerName STRING,
-    ContactName STRING,
-    ContactEmail STRING,
-    ContactPhone STRING,
-    Address STRING,
-    City STRING,
-    State STRING,
-    ZipCode STRING,
-    Country STRING,
-    ProductionCapacity INT
-) WITH (
-    KAFKA_TOPIC='manufacturers',
-    VALUE_FORMAT='JSON',
-    KEY='ManufacturerID'
+CREATE TABLE Manufacturers
+(
+    ManufacturerID     bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    ManufacturerName   text    NOT NULL,
+    ContactName        text    NOT NULL,
+    ContactEmail       text    NOT NULL,
+    ContactPhone       text    NOT NULL,
+    Address            text    NOT NULL,
+    City               text    NOT NULL,
+    State              text    NOT NULL,
+    ZipCode            text    NOT NULL,
+    Country            text    NOT NULL,
+    ProductionCapacity integer NOT NULL
 );
 
-CREATE TABLE Products (
-    ProductID STRING PRIMARY KEY,
-    ProductName STRING,
-    Category STRING,
-    Description STRING,
-    UnitPrice DECIMAL(10, 2),
-    ManufacturerID STRING,
-    SupplierID STRING,
-    WarrantyPeriod STRING
-) WITH (
-    KAFKA_TOPIC='products',
-    VALUE_FORMAT='JSON',
-    KEY='ProductID'
+CREATE TABLE Supplier_Manufacturer
+(
+    SupplierID     bigint REFERENCES Suppliers ON DELETE CASCADE,
+    ManufacturerID bigint REFERENCES Manufacturers ON DELETE CASCADE,
+    PRIMARY KEY (SupplierID, ManufacturerID)
+)
+
+CREATE TABLE Products
+(
+    ProductID      bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    ProductName    text           NOT NULL,
+    Category       text           NOT NULL,
+    Description    text           NOT NULL,
+    UnitPrice      DECIMAL(10, 2) NOT NULL,
+    ManufacturerID bigint REFERENCES Manufacturers,
+    WarrantyPeriod text           NOT NULL
 );
 
-CREATE TABLE Distributors (
-    DistributorID STRING PRIMARY KEY,
-    DistributorName STRING,
-    ContactName STRING,
-    ContactEmail STRING,
-    ContactPhone STRING,
-    Address STRING,
-    City STRING,
-    State STRING,
-    ZipCode STRING,
-    Country STRING,
-    DistributionArea STRING
-) WITH (
-    KAFKA_TOPIC='distributors',
-    VALUE_FORMAT='JSON',
-    KEY='DistributorID'
+CREATE TABLE Inventory
+(
+    InventoryID    bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    ProductID      bigint  REFERENCES Products UNIQUE,
+    QuantityOnHand integer NOT NULL,
+    ReorderLevel   integer NOT NULL,
+    Location       text    NOT NULL
 );
 
-CREATE TABLE Retailers (
-    RetailerID STRING PRIMARY KEY,
-    RetailerName STRING,
-    ContactName STRING,
-    ContactEmail STRING,
-    ContactPhone STRING,
-    Address STRING,
-    City STRING,
-    State STRING,
-    ZipCode STRING,
-    Country STRING,
-    StoreType STRING
-) WITH (
-    KAFKA_TOPIC='retailers',
-    VALUE_FORMAT='JSON',
-    KEY='RetailerID'
+CREATE TABLE Distributors
+(
+    DistributorID    bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    DistributorName  text NOT NULL,
+    ContactName      text NOT NULL,
+    ContactEmail     text NOT NULL,
+    ContactPhone     text NOT NULL,
+    Address          text NOT NULL,
+    City             text NOT NULL,
+    State            text NOT NULL,
+    ZipCode          text NOT NULL,
+    Country          text NOT NULL,
+    DistributionArea text NOT NULL
 );
 
-CREATE TABLE Customers (
-    CustomerID STRING PRIMARY KEY,
-    FirstName STRING,
-    LastName STRING,
-    Email STRING,
-    Phone STRING,
-    Address STRING,
-    City STRING,
-    State STRING,
-    ZipCode STRING,
-    Country STRING,
-    LoyaltyPoints INT
-) WITH (
-    KAFKA_TOPIC='customers',
-    VALUE_FORMAT='JSON',
-    KEY='CustomerID'
+CREATE TABLE Retailers
+(
+    RetailerID   bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    RetailerName text NOT NULL,
+    ContactName  text NOT NULL,
+    ContactEmail text NOT NULL,
+    ContactPhone text NOT NULL,
+    Address      text NOT NULL,
+    City         text NOT NULL,
+    State        text NOT NULL,
+    ZipCode      text NOT NULL,
+    Country      text NOT NULL,
+    StoreType    text NOT NULL
 );
 
-
--- streams 
-
-CREATE STREAM OrdersStream (
-    OrderID STRING,
-    CustomerID STRING,
-    OrderDate BIGINT,  -- Use UNIX epoch time in milliseconds for the timestamp
-    TotalAmount DECIMAL(10, 2),
-    OrderStatus STRING,
-    ShippingID STRING,
-    RetailerID STRING
-) WITH (
-    KAFKA_TOPIC='orders_status',
-    VALUE_FORMAT='JSON'
+CREATE TABLE Customers
+(
+    CustomerID    bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    FirstName     text    NOT NULL,
+    LastName      text    NOT NULL,
+    Email         text    NOT NULL,
+    Phone         text    NOT NULL,
+    Address       text    NOT NULL,
+    City          text    NOT NULL,
+    State         text    NOT NULL,
+    ZipCode       text    NOT NULL,
+    Country       text    NOT NULL,
+    LoyaltyPoints integer NOT NULL
 );
-
-
-CREATE STREAM InventoryStream (
-    InventoryID STRING,
-    ProductID STRING,
-    QuantityOnHand INT,
-    ReorderLevel INT,
-    Location STRING
-) WITH (
-    KAFKA_TOPIC='inventory_status',
-    VALUE_FORMAT='JSON'
-);
-
-CREATE STREAM ShippingStream (
-    ShippingID STRING,
-    OrderID STRING,
-    DistributorID STRING,
-    ShippingDate BIGINT,  -- Use UNIX epoch time in milliseconds
-    ShippingMethod STRING,
-    ShippingStatus STRING,
-    DeliveryStatus STRING
-) WITH (
-    KAFKA_TOPIC='shipping_status',
-    VALUE_FORMAT='JSON'
-);
-
-CREATE STREAM PaymentsStream (
-    PaymentID STRING,
-    OrderID STRING,
-    PaymentDate BIGINT,  -- Use UNIX epoch time in milliseconds
-    Amount DECIMAL(10, 2),
-    PaymentMethod STRING,  
-    PaymentStatus STRING
-) WITH (
-    KAFKA_TOPIC='payments_status',
-    VALUE_FORMAT='JSON'
-);
-
-

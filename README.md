@@ -28,6 +28,14 @@ Analytics (Predictive Models, Visualization Tools)
 ##### Problem statement
 We are a company that provides predictive insights to suppliers by forecasting the optimal quantity of raw materials they should produce. Our solution leverages data from intermediate manufacturing processes and retail performance to deliver precise, data-driven recommendations, helping suppliers align their production plans with actual market demand, minimize waste, and optimize inventory management.
 
-
+### How to use
+start docker containers
+```bash
+docker compose up -d
+```
+to connect to psql and interact with postgresql (the name of the container may be different)
+```bash
+docker exec -it best_big_data_project_sql-database_1 psql -U postgres
+```
 
 
