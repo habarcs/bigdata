@@ -33,7 +33,7 @@ CREATE TABLE Supplier_Manufacturer
     SupplierID     bigint REFERENCES Suppliers ON DELETE CASCADE,
     ManufacturerID bigint REFERENCES Manufacturers ON DELETE CASCADE,
     PRIMARY KEY (SupplierID, ManufacturerID)
-)
+);
 
 CREATE TABLE Products
 (
