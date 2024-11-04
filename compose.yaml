@@ -4,8 +4,8 @@ name: best_big_data_project
 services:
   kafka:
     image: apache/kafka-native:3.8.1 # use graalvm image for faster startup
-    ports:
-      - "9092:9092"
+#    ports:
+#      - "9092:9092" # only needed to be able to access it from outside docker
 
   sql-database:
     image: postgres:17.0
