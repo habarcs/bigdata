@@ -16,6 +16,6 @@ services:
         tmpfs:
           size: 134217728
 #      - ./postgres_data/:/var/lib/postgresql/data # uncomment to save database locally
-      - ./postgres_startup:/docker-entrypoint-initdb.d
+      - ./postgres_startup:/docker-entrypoint-initdb.d:z
     environment:
       POSTGRES_PASSWORD: supersecret
