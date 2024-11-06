@@ -1,7 +1,7 @@
 pandas
 faker
 confluent-kafka
-
+psycopg[binary]
 
 
 
