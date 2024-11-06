@@ -83,8 +83,178 @@ def create_supplier_manufacturer_conn():
             # TODO finish multi-multi conn
 
 
+
+
+
+# Instantiate Faker for generating fake data
+fake = Faker()
+
+def create_products():
+    products = []
+    
+    # Fetch manufacturer IDs to associate with products
+    conn: psycopg.Connection
+    with psycopg.connect(POSTGRES_CONNECTION) as conn:
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            manufacturer_ids = [row[0] for row in cur.execute("SELECT ManufacturerID FROM Manufacturers").fetchall()]
+            
+            # Number of products to generate
+            num_products = 100  # Adjust this as needed
+            
+            for _ in range(num_products):
+                product = (
+                    fake.unique.word(),              # ProductName
+                    fake.word(ext_word_list=['Electronics', 'Furniture', 'Toys', 'Tools', 'Apparel']),  # Category
+                    fake.sentence(nb_words=10),      # Description
+                    round(random.uniform(10.0, 1000.0), 2),  # UnitPrice
+                    random.choice(manufacturer_ids) if manufacturer_ids else None,  # ManufacturerID
+                    random.choice(['1 year', '2 years', '3 years'])  # WarrantyPeriod
+                )
+                products.append(product)
+            
+            # Bulk insert into Products table
+            cur.executemany(
+                "INSERT INTO Products (ProductName, Category, Description, UnitPrice, ManufacturerID, WarrantyPeriod) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                products
+            )
+
+
+def create_inventory():
+    conn: psycopg.Connection
+    with psycopg.connect(POSTGRES_CONNECTION) as conn:
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            product_ids = [row[0] for row in cur.execute("SELECT ProductID FROM Products").fetchall()]
+            
+            inventory_data = []
+            for product_id in product_ids:
+                inventory = (
+                    product_id,                      # ProductID
+                    random.randint(0, 500),          # QuantityOnHand, randomly between 0 and 500
+                    random.randint(10, 50),          # ReorderLevel, randomly between 10 and 50
+                    fake.city()                      # Location, using a random city name
+                )
+                inventory_data.append(inventory)
+            
+            # Bulk insert into Inventory table
+            cur.executemany(
+                "INSERT INTO Inventory (ProductID, QuantityOnHand, ReorderLevel, Location) "
+                "VALUES (%s, %s, %s, %s)",
+                inventory_data
+            )       
+
+
+
+NUM_DISTRIBUTORS = int(os.getenv("NUM_DISTRIBUTORS", 70))
+
+
+def create_distributors(fake: Faker):
+    distributors = []
+    
+    
+    for _ in range(NUM_DISTRIBUTORS):
+        distributor = (
+            fake.company(),               # DistributorName
+            fake.name(),                  # ContactName
+            fake.email(),                 # ContactEmail
+            fake.phone_number(),          # ContactPhone
+            fake.address(),               # Address
+            fake.city(),                  # City
+            fake.state(),                 # State
+            fake.zipcode(),               # ZipCode
+            fake.country(),               # Country
+            fake.region(),                # DistributionArea, a general geographic area
+        )
+        distributors.append(distributor)
+    
+    # Insert data into Distributors table
+    conn: psycopg.Connection
+    with psycopg.connect(POSTGRES_CONNECTION) as conn:
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO Distributors (DistributorName, ContactName, ContactEmail, ContactPhone, "
+                "Address, City, State, ZipCode, Country, DistributionArea) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                distributors
+            )
+
+NUM_RETAILERS = int(os.getenv("NUM_RETAILERS", 38))
+
+def create_retailers(fake: Faker):
+    retailers = []
+    
+    for _ in range(NUM_RETAILERS ):
+        retailer = (
+            fake.company(),               # RetailerName
+            fake.name(),                  # ContactName
+            fake.email(),                 # ContactEmail
+            fake.phone_number(),          # ContactPhone
+            fake.address(),               # Address
+            fake.city(),                  # City
+            fake.state(),                 # State
+            fake.zipcode(),               # ZipCode
+            fake.country(),               # Country
+            fake.word(),                  # StoreType, a random word to simulate a type of store
+        )
+        retailers.append(retailer)
+    
+    # Insert data into Retailers table
+    conn: psycopg.Connection
+    with psycopg.connect(POSTGRES_CONNECTION) as conn:
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO Retailers (RetailerName, ContactName, ContactEmail, ContactPhone, "
+                "Address, City, State, ZipCode, Country, StoreType) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                retailers
+            )
+
+
+NUM_CUSTUMERS = int(os.getenv("NUM_CUSTUMERS", 666))
+
+def create_customers(fake: Faker):
+    customers = []
+    
+    for _ in range(NUM_CUSTUMERS):
+        customer = (
+            fake.first_name(),            # FirstName
+            fake.last_name(),             # LastName
+            fake.email(),                 # Email
+            fake.phone_number(),          # Phone
+            fake.address(),               # Address
+            fake.city(),                  # City
+            fake.state(),                 # State
+            fake.zipcode(),               # ZipCode
+            fake.country(),               # Country
+            random.randint(0, 1000),       # LoyaltyPoints (random number between 0 and 1000)
+        )
+        customers.append(customer)
+    
+    # Insert data into Customers table
+    conn: psycopg.Connection
+    with psycopg.connect(POSTGRES_CONNECTION) as conn:
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO Customers (FirstName, LastName, Email, Phone, Address, City, State, ZipCode, Country, LoyaltyPoints) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                customers
+            )
+
+
+
 if __name__ == '__main__':
     fake_gen = Faker()
     create_suppliers(fake_gen)
     create_manufacturers(fake_gen)
     create_supplier_manufacturer_conn()
+    create_products()
+    create_inventory()
+    create_distributors(fake_gen)
+    create_retailers(fake_gen)
+    create_customers(fake_gen)
+
