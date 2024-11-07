@@ -9,6 +9,7 @@ POSTGRES_CONNECTION = "dbname=postgres user=postgres host=localhost port=5432 pa
 
 NUM_SUPPLIERS = int(os.getenv("NUM_SUPPLIERS", 200))
 NUM_MANUFACTURERS = int(os.getenv("NUM_MANUFACTURERS", 30))
+NUM_SUP_MAN_CON = int(os.getenv("NUM_SUPPLIERS", 300))  # this should be higher than NUM_SUPPLIERS and NUM_MANUFACTURERS
 
 
 def create_suppliers(fake: Faker):
@@ -72,18 +73,31 @@ def create_manufacturers(fake: Faker):
 
 
 def create_supplier_manufacturer_conn():
+    connections = set()  # no duplicates
     conn: psycopg.Connection
     with psycopg.connect(POSTGRES_CONNECTION) as conn:
         cur: psycopg.Cursor
         with conn.cursor() as cur:
             supplier_ids = [row[0] for row in cur.execute("SELECT SupplierID from Suppliers").fetchall()]
             manufacturer_ids = [row[0] for row in cur.execute("SELECT ManufacturerID from Manufacturers").fetchall()]
-            print(supplier_ids)
-            print(manufacturer_ids)
-            # TODO finish multi-multi conn
 
+        # make sure every supplier has at least one contact and vice versa
+        for supplier_id in supplier_ids:
+            connections.add((supplier_id, random.choice(manufacturer_ids)))
+        for manufacturer_id in manufacturer_ids:
+            connections.add((random.choice(supplier_ids), manufacturer_id))
+        while len(connections) < NUM_SUP_MAN_CON:
+            connections.add((random.choice(supplier_ids), random.choice(manufacturer_ids)))
+        connections = list(connections)
+        print(connections)
 
-
+        cur: psycopg.Cursor
+        with conn.cursor() as cur:
+            copy: psycopg.Copy
+            with cur.copy(
+                    "COPY Supplier_Manufacturer (SupplierID, ManufacturerID) FROM STDIN") as copy:
+                for connection in connections:
+                    copy.write_row(connection)
 
 
 # Instantiate Faker for generating fake data
@@ -233,7 +247,7 @@ def create_customers(fake: Faker):
             random.randint(0, 1000),       # LoyaltyPoints (random number between 0 and 1000)
         )
         customers.append(customer)
-    
+
     # Insert data into Customers table
     conn: psycopg.Connection
     with psycopg.connect(POSTGRES_CONNECTION) as conn:
@@ -246,8 +260,8 @@ def create_customers(fake: Faker):
             )
 
 
-
 if __name__ == '__main__':
+    random.seed(987654321)
     fake_gen = Faker()
     create_suppliers(fake_gen)
     create_manufacturers(fake_gen)
