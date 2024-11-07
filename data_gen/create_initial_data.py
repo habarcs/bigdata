@@ -11,6 +11,10 @@ NUM_SUPPLIERS = int(os.getenv("NUM_SUPPLIERS", 200))
 NUM_MANUFACTURERS = int(os.getenv("NUM_MANUFACTURERS", 30))
 NUM_SUP_MAN_CON = int(os.getenv("NUM_SUPPLIERS", 300))  # this should be higher than NUM_SUPPLIERS and NUM_MANUFACTURERS
 
+NUM_PRODUCTS = int(os.getenv("NUM_PRODUCTS", 100)) 
+NUM_DISTRIBUTORS = int(os.getenv("NUM_DISTRIBUTORS", 70))
+NUM_RETAILERS = int(os.getenv("NUM_RETAILERS", 38))
+NUM_CUSTUMERS = int(os.getenv("NUM_CUSTUMERS", 666))
 
 def create_suppliers(fake: Faker):
     supplier_names = [fake.unique.company() for _ in range(NUM_SUPPLIERS)]
@@ -100,9 +104,6 @@ def create_supplier_manufacturer_conn():
                     copy.write_row(connection)
 
 
-# Instantiate Faker for generating fake data
-fake = Faker()
-
 def create_products():
     products = []
     
@@ -112,11 +113,8 @@ def create_products():
         cur: psycopg.Cursor
         with conn.cursor() as cur:
             manufacturer_ids = [row[0] for row in cur.execute("SELECT ManufacturerID FROM Manufacturers").fetchall()]
-            
-            # Number of products to generate
-            num_products = 100  # Adjust this as needed
-            
-            for _ in range(num_products):
+                       
+            for _ in range(NUM_PRODUCTS):
                 product = (
                     fake.unique.word(),              # ProductName
                     fake.word(ext_word_list=['Electronics', 'Furniture', 'Toys', 'Tools', 'Apparel']),  # Category
@@ -161,16 +159,13 @@ def create_inventory():
 
 
 
-NUM_DISTRIBUTORS = int(os.getenv("NUM_DISTRIBUTORS", 70))
-
-
 def create_distributors(fake: Faker):
+    distribtor_names = [fake.unique.company() for _ in range(NUM_DISTRIBUTORS)]
     distributors = []
-    
-    
+        
     for _ in range(NUM_DISTRIBUTORS):
         distributor = (
-            fake.company(),               # DistributorName
+            distribtor_names[i]           # DistributorName
             fake.name(),                  # ContactName
             fake.email(),                 # ContactEmail
             fake.phone_number(),          # ContactPhone
@@ -195,14 +190,14 @@ def create_distributors(fake: Faker):
                 distributors
             )
 
-NUM_RETAILERS = int(os.getenv("NUM_RETAILERS", 38))
 
 def create_retailers(fake: Faker):
+    retailer_names = [fake.unique.company() for _ in range(NUM_RETAILERS)]
     retailers = []
     
     for _ in range(NUM_RETAILERS ):
         retailer = (
-            fake.company(),               # RetailerName
+            retailer_names[i],            # RetailerName
             fake.name(),                  # ContactName
             fake.email(),                 # ContactEmail
             fake.phone_number(),          # ContactPhone
@@ -227,8 +222,6 @@ def create_retailers(fake: Faker):
                 retailers
             )
 
-
-NUM_CUSTUMERS = int(os.getenv("NUM_CUSTUMERS", 666))
 
 def create_customers(fake: Faker):
     customers = []
