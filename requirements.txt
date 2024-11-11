@@ -1,5 +1,2 @@
+-r data_gen/requirements.txt
 pandas
-faker
-confluent-kafka
-psycopg[binary]
-numpy

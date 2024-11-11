@@ -10,13 +10,13 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka import Producer
 from faker import Faker
 
-from __init__ import KAFKA_CONF, POSTGRES_CONNECTION
+from data_gen import KAFKA_CONF, POSTGRES_CONNECTION
 
 
 def create_kafka_topics():
     admin_client = AdminClient(KAFKA_CONF)
     new_topics = [
-        NewTopic("Orders"), NewTopic("SuppliedMaterial"), NewTopic("Shipping"), NewTopic("manufacturedProducts")
+        NewTopic("Orders"), NewTopic("SuppliedMaterial"), NewTopic("Shipping"), NewTopic("ManufacturedProducts")
     ]
     fs = admin_client.create_topics(new_topics)
     for topic, f in fs.items():

@@ -2,12 +2,10 @@ import socket
 
 from faker.providers import DynamicProvider
 
-# TODO refer to the postgres host by sql-database once this code runs in docker
 # TODO less important: secret should not be clear
-POSTGRES_CONNECTION = "dbname=postgres user=postgres host=localhost port=5432 password=supersecret"
-KAFKA_CONF = {'bootstrap.servers': 'localhost:9092',  # TODO change later to docker host
-        'client.id': socket.gethostname()}
-
+POSTGRES_CONNECTION = "dbname=postgres user=postgres host=sql-database port=5432 password=supersecret"
+KAFKA_CONF = {'bootstrap.servers': 'kafka:9092',
+              'client.id': socket.gethostname()}
 
 geo_area_provider = DynamicProvider(
     provider_name="geo_area",

@@ -1,9 +1,10 @@
-from faker import Faker
-import psycopg
 import os
 import random
-from __init__ import geo_area_provider, store_type_provider, POSTGRES_CONNECTION
-from kafka_producer import create_kafka_topics, event_generation_loop
+
+import psycopg
+from faker import Faker
+
+from data_gen import POSTGRES_CONNECTION
 
 NUM_SUPPLIERS = int(os.getenv("NUM_SUPPLIERS", 200))
 NUM_MANUFACTURERS = int(os.getenv("NUM_MANUFACTURERS", 30))
@@ -246,21 +247,3 @@ def create_customers(fake: Faker):
                           " State, ZipCode, Country, LoyaltyPoints) FROM STDIN") as copy:
                 for customer in customers:
                     copy.write_row(customer)
-
-
-if __name__ == '__main__':
-    fake_gen = Faker('en_US')
-    fake_gen.add_provider(geo_area_provider)
-    fake_gen.add_provider(store_type_provider)
-
-    # create_suppliers(fake_gen)
-    # create_manufacturers(fake_gen)
-    # create_supplier_manufacturer_conn()
-    # create_products(fake_gen)
-    # create_inventory(fake_gen)
-    # create_distributors(fake_gen)
-    # create_retailers(fake_gen)
-    # create_customers(fake_gen)
-
-    create_kafka_topics()
-    event_generation_loop(fake_gen)

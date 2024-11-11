@@ -3,12 +3,22 @@ name: best_big_data_project
 
 services:
   kafka:
-    image: apache/kafka-native:3.8.1 # use graalvm image for faster startup
+    image: apache/kafka:3.8.1
     ports:
       - "9092:9092" # only needed to be able to access it from outside docker
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 || exit 1"]
+      interval: 1s
+      timeout: 60s
+      retries: 60
 
   sql-database:
     image: postgres:17.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      start_period: 30s
+      timeout: 10s
     ports:
       - "5432:5432" # only needed to be able to access it from outside docker
     shm_size: 128mb
@@ -21,3 +31,11 @@ services:
       - ./postgres_startup:/docker-entrypoint-initdb.d:z
     environment:
       POSTGRES_PASSWORD: supersecret
+
+  data-gen:
+    build: data_gen
+    depends_on:
+      kafka:
+        condition: service_healthy
+      sql-database:
+        condition: service_healthy
