@@ -2,8 +2,8 @@ from faker import Faker
 import psycopg
 import os
 import random
-
-from data_gen import geo_area_provider, store_type_provider
+from __init__ import geo_area_provider, store_type_provider
+from kafka_producer import create_kafka_topics, list_kafka_topics
 
 # TODO refer to the postgres host by sql-database once this code runs in docker
 # TODO less important: secret should not be clear
@@ -265,3 +265,6 @@ if __name__ == '__main__':
     create_distributors(fake_gen)
     create_retailers(fake_gen)
     create_customers(fake_gen)
+    create_kafka_topics()
+    list_kafka_topics() #probably not needed
+    
