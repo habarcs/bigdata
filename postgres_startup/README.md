@@ -1,0 +1,3 @@
+The content of this directory is mapped to the postgresql container and every script (sql, sh) will be executed by it.
+
+Used to initialize postgres: creating schema and creating views...

@@ -1,9 +1,7 @@
-python-dotenv
-kafka-python
 pandas
 faker
 confluent-kafka
-
+psycopg[binary]
 
 
 
