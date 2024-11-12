@@ -61,7 +61,7 @@ def create_manufacturers(fake: Faker):
             fake.city(),  # City
             fake.state(),  # State
             fake.zipcode(),  # ZipCode
-            fake.country(),  # Country
+            fake.country(,  # Country
             random.randint(100, 100000),  # ProductionCapacity
         )
         manufacturers.append(manufacturer)
@@ -266,5 +266,4 @@ if __name__ == '__main__':
     create_retailers(fake_gen)
     create_customers(fake_gen)
     create_kafka_topics()
-    list_kafka_topics() #probably not needed
     
