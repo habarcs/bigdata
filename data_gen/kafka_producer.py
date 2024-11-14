@@ -1,5 +1,4 @@
 import random
-import socket
 import time
 import uuid
 import json
@@ -11,10 +10,7 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from confluent_kafka import Producer
 from faker import Faker
 
-from data_gen.create_initial_data import POSTGRES_CONNECTION
-
-KAFKA_CONF = {'bootstrap.servers': 'localhost:9092',  # TODO change later to docker host
-        'client.id': socket.gethostname()}
+from __init__ import KAFKA_CONF, POSTGRES_CONNECTION
 
 
 def create_kafka_topics():
@@ -41,13 +37,13 @@ def generate_order_and_shipping_event(fake: Faker):
             retailer_ids = [row[0] for row in cur.execute("SELECT RetailerID from Retailers").fetchall()]
             product_ids = [row[0] for row in cur.execute("SELECT ProductID from Products").fetchall()]
 
-    order_id = uuid.uuid4()  # we generate an uuid randomly, the chance of collision is very low, see https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
+    order_id = str(uuid.uuid4())  # we generate an uuid randomly, the chance of collision is very low, see https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
     shipping_options = ["Shipped", "Delivered", "In Transit", "Out for Delivery", "Awaiting Pickup"]
     payment_options = ["Card", "Gift Card", "Cash", "Cryptocurrency", "Apple Pay", "Google Pay", "Spices", "Gold Coins",
                        "Klarna"]
 
     # Mean discount 8 maximum 100 percent, the chance of having a discount is 30 percent
-    discount = max((np.random.poisson(7) + 1), 100)  if random.random() < 0.3 else 0
+    discount = max((np.random.poisson(7) + 1), 100) if random.random() < 0.3 else 0
     customer_id = random.choice(customer_ids)
     current_time = int(time.time())
 
@@ -80,21 +76,22 @@ def generate_order_and_shipping_event(fake: Faker):
                       "Declined"]
 
     shipping = {
-        'OrderId': order_id,
-        'ShippingId': order_id,
-        'CustomerId': customer_id,
+        'OrderID': order_id,
+        'ShippingID': order_id,
+        'CustomerID': customer_id,
         'Address': fake.address(),  # should be queried from database
         'Shipper': random.choice(shippers),
-        'TrackingNumber': uuid.uuid4(),
+        'TrackingNumber': str(uuid.uuid4()),
         'ShippingDate': current_time,
         'EstimatedDeliveryDate': current_time + random.randint(3, 10) * 86400,
-        'ActualDeliveryDate': current_time + random.randint(3, 10) * 86400,  # should be null if shipment is not yet delivered
+        'ActualDeliveryDate': current_time + random.randint(3, 10) * 86400,
+        # should be null if shipment is not yet delivered
         'ShipmentStatus': random.choice(shipping_options),
         'Weight': random.uniform(5, 100),
         'Dimensions': (random.uniform(10, 500), 2),
         'Payment_status': random.choice(payment_status),
         'Origin': fake.country(),
-        'Destination': fake.concelho()
+        'Destination': fake.country()
     }
     return order, shipping
 
@@ -106,18 +103,20 @@ def acked(err, msg):
         print("Message produced: %s" % (str(msg)))
 
 
-def gen_and_send_event(fake:Faker, producer: Producer):
+def gen_and_send_event(fake: Faker, producer: Producer):
     order, shipping = generate_order_and_shipping_event(fake)
-    key = order["OrderId"]
+    key = order["OrderID"]
     producer.produce("Orders", key=key, value=json.dumps(order), callback=acked)
     producer.produce("Shipping", key=key, value=json.dumps(shipping), callback=acked)
     producer.poll(1)
 
+
 def event_generation_loop(fake: Faker):
     producer = Producer(KAFKA_CONF)
     scheduler = sched.scheduler(time.time, time.sleep)
+
     def repeat_task():
-        scheduler.enter(2, 1, generate_order_and_shipping_event, (fake, producer))
+        scheduler.enter(2, 1, gen_and_send_event, (fake, producer))
         scheduler.enter(2, 1, repeat_task, ())
 
     repeat_task()
