@@ -1,21 +1,24 @@
-
 import random
-import time
-from confluent_kafka import Producer
-from confluent_kafka.admin import AdminClient, NewTopic
 import socket
-from faker import Faker
-import psycopg
-from data_gen.create_initial_data import POSTGRES_CONNECTION
+import time
+import uuid
+import json
+import sched
+
 import numpy as np
+import psycopg
+from confluent_kafka.admin import AdminClient, NewTopic
+from confluent_kafka import Producer
+from faker import Faker
 
+from data_gen.create_initial_data import POSTGRES_CONNECTION
 
-CONF = {'bootstrap.servers': 'localhost:9092', #change later
+KAFKA_CONF = {'bootstrap.servers': 'localhost:9092',  # TODO change later to docker host
         'client.id': socket.gethostname()}
 
 
 def create_kafka_topics():
-    admin_client = AdminClient(CONF)
+    admin_client = AdminClient(KAFKA_CONF)
     new_topics = [
         NewTopic("Orders"), NewTopic("SuppliedMaterial"), NewTopic("Shipping"), NewTopic("manufacturedProducts")
     ]
@@ -28,32 +31,38 @@ def create_kafka_topics():
             print(f"Failed to create topic {topic}: {e}")
 
 
-
-
-def generate_order_event(order_id, fake: Faker):
-    connections = set()  # no duplicates
+def generate_order_and_shipping_event(fake: Faker):
+    # TODO fix event generation so it is more consistent with data we already have and it makes sense in real world
     conn: psycopg.Connection
     with psycopg.connect(POSTGRES_CONNECTION) as conn:
         cur: psycopg.Cursor
         with conn.cursor() as cur:
-            customer_ids = [row[0] for row in cur.execute("SELECT CustumerID from Customers").fetchall()]
-            retailer_ids= [row[0] for row in cur.execute("SELECT RetailerID from Retailers").fetchall()]
-            product_ids= [row[0] for row in cur.execute("SELECT ProductID from Products").fetchall()]
-            
-    shipping_options = ["Shipped", "Delivered", "In Transit", "Out for Delivery", "Awaiting Pickup"]
-    payment_options = ["Card", "Gift Card", "Cash", "Cryptocurrency", "Apple Pay", "Google Pay", "Spices", "Gold Coins", "Klarna" ]
-    discount = random.gauss(8, 5) # Mean discount 8%, with +- 5
+            customer_ids = [row[0] for row in cur.execute("SELECT CustomerID from Customers").fetchall()]
+            retailer_ids = [row[0] for row in cur.execute("SELECT RetailerID from Retailers").fetchall()]
+            product_ids = [row[0] for row in cur.execute("SELECT ProductID from Products").fetchall()]
 
-    
+    order_id = uuid.uuid4()  # we generate an uuid randomly, the chance of collision is very low, see https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
+    shipping_options = ["Shipped", "Delivered", "In Transit", "Out for Delivery", "Awaiting Pickup"]
+    payment_options = ["Card", "Gift Card", "Cash", "Cryptocurrency", "Apple Pay", "Google Pay", "Spices", "Gold Coins",
+                       "Klarna"]
+
+    # Mean discount 8 maximum 100 percent, the chance of having a discount is 30 percent
+    discount = max((np.random.poisson(7) + 1), 100)  if random.random() < 0.3 else 0
+    customer_id = random.choice(customer_ids)
+    current_time = int(time.time())
+
+    # this part should be more coherent so we can run predictions on it
+    # total amount should be calculated from product prices that have to be queried from database, discount should be
+    # then applied, profit should be the same
     order = {
         'OrderID': order_id,
-        'CustomerID': random.choice(customer_ids),
-        'OrderDate': int(time.time()),
+        'CustomerID': customer_id,
+        'OrderDate': current_time,
         'TotalAmount': round(random.uniform(5, 100), 2),
-        'OrderStatus': random.choice(shipping_options), 
+        'OrderStatus': random.choice(shipping_options),
         'PaymentMethod': random.choice(payment_options),
-        'Product ID': random.sample(product_ids, np.random.poisson(2) + 1),
-        'OrderItemDiscount': abs(round(discount)) if random.random() < 0.3 else 0,
+        'ProductID': random.sample(product_ids, np.random.poisson(2) + 1),
+        'OrderItemDiscount': discount,
         'OrderItemTotal': round(random.uniform(1, 1000), 3),
         'OrderProfitPerOrder': round(random.uniform(0, 1), 3),
         'OrderQuantity': round(random.uniform(1, 1000)),
@@ -63,44 +72,53 @@ def generate_order_event(order_id, fake: Faker):
         'ShippingID': order_id,
         'RetailerID': random.choice(retailer_ids)
     }
-    return order
 
+    shippers = ["DHL", "FedEx", "UPS", "USPS (United States Postal Service)", "TNT", "Royal Mail", "Canada Post",
+                "Australia Post", "Maersk", "CMA CGM", "XPO Logistics", "China Post", "Japan Post", "La Poste",
+                "India Post", "Singapore Post (SingPost)", "Aramex", "PostNL", "YRC Worldwide", "Seur"]
+    payment_status = ["Pending", "Paid", "Overdue", "Cancelled", "Refunded", "Failed", "Processing", "Authorized",
+                      "Declined"]
 
-def generate_shipping_event(shipping_id, fake: Faker):
-    connections = set()  # no duplicates
-    conn: psycopg.Connection
-    with psycopg.connect(POSTGRES_CONNECTION) as conn:
-        cur: psycopg.Cursor
-        with conn.cursor() as cur:
-            customer_ids = [row[0] for row in cur.execute("SELECT CustumerID from Customers").fetchall()]
-            address_customer = [row[0] for row in cur.execute("SELECT Address from Customers").fetchall()]
-            country_custumer = [row[0] for row in cur.execute("SELECT Country from Customers").fetchall()]
-      
-    shipping_options = ["Shipped", "Delivered", "In Transit", "Out for Delivery", "Awaiting Pickup"]                    
-    shippers = ["DHL", "FedEx", "UPS", "USPS (United States Postal Service)", "TNT", "Royal Mail", "Canada Post", "Australia Post", "Maersk", "CMA CGM", "XPO Logistics", "China Post", "Japan Post", "La Poste", "India Post", "Singapore Post (SingPost)", "Aramex", "PostNL", "YRC Worldwide", "Seur"]
-    payment_status = ["Pending", "Paid", "Overdue", "Cancelled", "Refunded", "Failed", "Processing", "Authorized", "Declined"]
-
-    current_time = int(time.time())
-    
     shipping = {
-
-        'order_id' = order_id,
-        'customer_id' = customer_name,
-        'address' = address_customer,
-        'shipper' = random.choice(shippers),
-        #tracking_number = tracking_number # what to do with this one?
-        'shipping_date' = current_time,
-        'estimated_delivery_date' = current_time + random.randint(3, 10) * 86400,
-        'actual_delivery_date' = current_time + random.randint(3, 10) * 86400,
-        'shipment_status' = random.choice(shipping_options),
-        'weight' = random.uniform((5, 100), 2),
-        'dimensions' = (random.uniform(10, 500), 2),
-        'payment_status' = random.choice(payment_status),
-        'origin' = fake.country(),
-        'destination' = country_custumer
+        'OrderId': order_id,
+        'ShippingId': order_id,
+        'CustomerId': customer_id,
+        'Address': fake.address(),  # should be queried from database
+        'Shipper': random.choice(shippers),
+        'TrackingNumber': uuid.uuid4(),
+        'ShippingDate': current_time,
+        'EstimatedDeliveryDate': current_time + random.randint(3, 10) * 86400,
+        'ActualDeliveryDate': current_time + random.randint(3, 10) * 86400,  # should be null if shipment is not yet delivered
+        'ShipmentStatus': random.choice(shipping_options),
+        'Weight': random.uniform(5, 100),
+        'Dimensions': (random.uniform(10, 500), 2),
+        'Payment_status': random.choice(payment_status),
+        'Origin': fake.country(),
+        'Destination': fake.concelho()
     }
-    return order
+    return order, shipping
 
 
+def acked(err, msg):
+    if err is not None:
+        print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
+    else:
+        print("Message produced: %s" % (str(msg)))
 
 
+def gen_and_send_event(fake:Faker, producer: Producer):
+    order, shipping = generate_order_and_shipping_event(fake)
+    key = order["OrderId"]
+    producer.produce("Orders", key=key, value=json.dumps(order), callback=acked)
+    producer.produce("Shipping", key=key, value=json.dumps(shipping), callback=acked)
+    producer.poll(1)
+
+def event_generation_loop(fake: Faker):
+    producer = Producer(KAFKA_CONF)
+    scheduler = sched.scheduler(time.time, time.sleep)
+    def repeat_task():
+        scheduler.enter(2, 1, generate_order_and_shipping_event, (fake, producer))
+        scheduler.enter(2, 1, repeat_task, ())
+
+    repeat_task()
+    scheduler.run()

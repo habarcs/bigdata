@@ -61,7 +61,7 @@ def create_manufacturers(fake: Faker):
             fake.city(),  # City
             fake.state(),  # State
             fake.zipcode(),  # ZipCode
-            fake.country(,  # Country
+            fake.country(),  # Country
             random.randint(100, 100000),  # ProductionCapacity
         )
         manufacturers.append(manufacturer)
