@@ -2,13 +2,13 @@
 Big data project for UNITN
 
 
-Supplier, manufacturier, etc... sending data to central system. With this data we do predictions and dashboard. 
+Supplier, manufacturer, etc... sending data to central system. With this data we do predictions and dashboard. 
 
 Decide on format of data: tabular data, relational data. It is going to be synthetic data based on real data sets. This way we decide what variables could be used. 
 
 The simpler the project the better. In Martons head:
 
-Entities send data with a msg quue system to a central data warehouse. 
+Entities send data with a msg queue system to a central data warehouse. 
 Then processing stuff that runs in dask.
 Frontend system with dashboard. 
 
@@ -31,7 +31,7 @@ We are a company that provides predictive insights to suppliers by forecasting t
 ### How to use
 start docker containers
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 to connect to psql and interact with postgresql (the name of the container may be different)
 ```bash
