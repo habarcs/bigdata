@@ -3,6 +3,7 @@ import time
 import uuid
 import json
 import sched
+import signal
 
 import numpy as np
 import psycopg
@@ -37,7 +38,8 @@ def generate_order_and_shipping_event(fake: Faker):
             retailer_ids = [row[0] for row in cur.execute("SELECT RetailerID from Retailers").fetchall()]
             product_ids = [row[0] for row in cur.execute("SELECT ProductID from Products").fetchall()]
 
-    order_id = str(uuid.uuid4())  # we generate an uuid randomly, the chance of collision is very low, see https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
+    order_id = str(
+        uuid.uuid4())  # we generate an uuid randomly, the chance of collision is very low, see https://en.wikipedia.org/wiki/Universally_unique_identifier#Collisions
     shipping_options = ["Shipped", "Delivered", "In Transit", "Out for Delivery", "Awaiting Pickup"]
     payment_options = ["Card", "Gift Card", "Cash", "Cryptocurrency", "Apple Pay", "Google Pay", "Spices", "Gold Coins",
                        "Klarna"]
@@ -115,9 +117,16 @@ def event_generation_loop(fake: Faker):
     producer = Producer(KAFKA_CONF)
     scheduler = sched.scheduler(time.time, time.sleep)
 
+    def sigterm_handler(_, __):
+        print("Terminated: cancelling events")
+        for event in scheduler.queue:
+            scheduler.cancel(event)
+        producer.flush()
+
     def repeat_task():
         scheduler.enter(2, 1, gen_and_send_event, (fake, producer))
         scheduler.enter(2, 1, repeat_task, ())
 
+    signal.signal(signal.SIGTERM, sigterm_handler)
     repeat_task()
     scheduler.run()
