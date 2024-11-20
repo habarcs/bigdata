@@ -2,3 +2,4 @@ faker
 confluent-kafka
 psycopg[binary]
 numpy
+pandas
