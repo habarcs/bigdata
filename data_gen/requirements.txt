@@ -1,5 +1,6 @@
 faker
 confluent-kafka
-psycopg[binary]
+SQLAlchemy
 numpy
 pandas
+psycopg[binary,pool]
