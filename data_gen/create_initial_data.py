@@ -1,5 +1,6 @@
 import pandas as pd
 import sqlalchemy
+import faker
 
 
 def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
@@ -20,3 +21,22 @@ def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                     index=False,
                     index_label="ProductID"
                     )
+
+
+def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    fake = faker.Faker()
+    retailers = df.drop_duplicates(subset=["Customer City", "Customer State", "Customer Country"], keep="first")[[
+        "Customer Country",
+        "Customer State",
+        "Customer City",
+    ]].rename(columns={
+        "Customer Country": "RetailerCountry",
+        "Customer State": "RetailerState",
+        "Customer City": "RetailerCity"
+    })
+    retailers["RetailerName"] = [fake.company() for _ in retailers.index]
+
+    retailers.to_sql(name="Retailers",
+                     con=engine,
+                     if_exists="append",
+                     index=False)
