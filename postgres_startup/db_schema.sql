@@ -38,11 +38,10 @@ CREATE TABLE "Locations"
 CREATE TABLE "Customers"
 (
     "CustomerID" bigint PRIMARY KEY,
-    "LocationID" bigint REFERENCES "Locations" UNIQUE NOT NULL,
+    "LocationID" bigint REFERENCES "Locations" NOT NULL,
     "Market"     text                               NOT NULL,
     "FirstName"  text                               NOT NULL,
-    "LastName"   text                               NOT NULL,
-    "Email"      text                               NOT NULL,
+    "LastName"   text,
     "Segment"    text                               NOT NULL
 );
 

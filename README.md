@@ -35,7 +35,7 @@ docker compose up -d --build
 ```
 to connect to psql and interact with postgresql (the name of the container may be different)
 ```bash
-docker exec -it best_big_data_project_sql-database_1 psql -U postgres
+docker exec -it best_big_data_project-sql-database-1 psql -U postgres
 ```
 
 
