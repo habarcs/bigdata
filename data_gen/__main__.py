@@ -1,6 +1,6 @@
-import pandas as pd
 import os
 
+import pandas as pd
 from sqlalchemy import create_engine
 
 from data_gen import POSTGRES_CONNECTION
