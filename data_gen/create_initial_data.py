@@ -1,3 +1,5 @@
+from itertools import product
+
 import faker
 import pandas as pd
 import sqlalchemy
@@ -40,6 +42,24 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                      con=engine,
                      if_exists="append",
                      index=False)
+
+
+def create_inventory(_, engine: sqlalchemy.engine.Engine):
+    with engine.connect() as conn:
+        retailer_ids = conn.execute(sqlalchemy.text('SELECT "RetailerID" FROM "Retailers"')).fetchall()
+        product_ids = conn.execute(sqlalchemy.text('SELECT "ProductID" FROM "Products"')).fetchall()
+
+    retailer_ids = [retailer_id[0] for retailer_id in retailer_ids]
+    product_ids = [product_id[0] for product_id in product_ids]
+    df = pd.DataFrame(product(retailer_ids, product_ids),
+                      columns=["RetailerID", "ProductID"])
+    df["QuantityOnHand"] = 10000
+    df["ReorderLevel"] = 10
+
+    df.to_sql(name="Inventory",
+              con=engine,
+              if_exists="append",
+              index=False)
 
 
 def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):

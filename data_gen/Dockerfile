@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . ./data_gen
 
-CMD [ "python", "-m", "data_gen" ]
+CMD [ "python", "-u", "-m", "data_gen" ]

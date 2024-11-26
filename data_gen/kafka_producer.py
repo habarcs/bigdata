@@ -1,4 +1,5 @@
 import json
+import signal
 import time
 
 import pandas as pd
@@ -95,6 +96,14 @@ def send_event(producer: Producer, order: dict):
 
 def event_generation_loop(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
     producer = Producer(KAFKA_CONF)
+
+    def signal_handler(_, __):
+        producer.flush()
+        print("Stopping run, exiting.")
+        exit(0)
+
+    signal.signal(signal.SIGTERM, signal_handler)
+
     for order in order_generator(df, engine):
         send_event(producer, order)
         time.sleep(1)

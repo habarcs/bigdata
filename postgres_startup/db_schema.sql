@@ -18,8 +18,8 @@ CREATE TABLE "Retailers"
 
 CREATE TABLE "Inventory"
 (
-    "ProductID"      bigint REFERENCES "Products" UNIQUE,
-    "RetailerID"     bigint REFERENCES "Retailers" UNIQUE,
+    "ProductID"      bigint REFERENCES "Products",
+    "RetailerID"     bigint REFERENCES "Retailers",
     PRIMARY KEY ("RetailerID", "ProductID"),
     "QuantityOnHand" integer NOT NULL,
     "ReorderLevel"   integer NOT NULL
