@@ -1,1 +1,2 @@
 -r data_gen/requirements.txt
+-r processing/requirements.txt
