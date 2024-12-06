@@ -9,20 +9,20 @@ def main():
         'kafka_orders',
         TableDescriptor.for_connector('datagen')
         .schema(Schema.new_builder()
-                .column("TransactionType", "PAYMENT")
-                .column("RealShippingDays", 2)
-                .column("ScheduledShippingDays", 2)
-                .column("DeliveryStatus", "Shipping on time")
-                .column("LateRisk", 0)
-                .column("OrderData", "10/4/2016 22:55")
-                .column("OrderID", 44046)
-                .column("ProductID", 191)
-                .column("ItemQuantity", 3)
-                .column("Status", "PENDING_PAYMENT")
-                .column("ShippingData", "10/6/2016 22:55")
-                .column("ShippingMode", "Second Class")
-                .column("CustomerID", 5197)
-                .column("RetailerID", 1)
+                .column("TransactionType", DataTypes.STRING ) # "PAYMENT"
+                .column("RealShippingDays", DataTypes.INT) # 2
+                .column("ScheduledShippingDays", DataTypes.INT) # 2 
+                .column("DeliveryStatus", DataTypes.STRING) # "Shipping on time"
+                .column("LateRisk", DataTypes.INT) # 0
+                .column("OrderData", DataTypes.TIMESTAMP) # "10/4/2016 22:55"
+                .column("OrderID", DataTypes.INT) # 44046
+                .column("ProductID", DataTypes.INT) # 191
+                .column("ItemQuantity", DataTypes.INT) # 3
+                .column("Status", DataTypes.STRING) # "PENDING_PAYMENT"
+                .column("ShippingData", DataTypes.TIMESTAMP) # "10/6/2016 22:55"
+                .column("ShippingMode", DataTypes.STRING) # "Second Class"
+                .column("CustomerID", DataTypes.INT) # 5197
+                .column("RetailerID", DataTypes.INT) # 1
                 .build())
         .build())
 
