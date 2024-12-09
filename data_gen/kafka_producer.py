@@ -51,7 +51,7 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Days for shipment (scheduled)": "ScheduledShippingDays",
         "Delivery Status": "DeliveryStatus",
         "Late_delivery_risk": "LateRisk",
-        "order date (DateOrders)": "OrderData",
+        "order date (DateOrders)": "OrderDate",
         "Order Id": "OrderID",
         "Product Card Id": "ProductID",
         "Order Item Quantity": "ItemQuantity",
