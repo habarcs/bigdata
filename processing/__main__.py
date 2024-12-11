@@ -1,4 +1,5 @@
 from pyflink.table import EnvironmentSettings, TableEnvironment, TableDescriptor, Schema, DataTypes
+from pyflink.table.expressions import col
 
 
 def main():
@@ -7,7 +8,7 @@ def main():
     table_env = TableEnvironment.create(env_settings)
     table_env.get_config().set(
         "pipeline.jars",
-        "file:///opt/postgresql.jar;file:///opt/flink-connector-kafka.jar")
+        "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-sql-connector-postgresql.jar")
 
     # Define Kafka table schema
     kafka_schema = Schema.new_builder() \
@@ -42,18 +43,40 @@ def main():
         .option("topic", "Orders")
         .option("properties.bootstrap.servers", "kafka:9092")
         .option("format", "json")
+        .option("properties.group.id", "flinventory")
         .build())
 
     # Create Postgres sink table
     table_env.create_temporary_table(
         "postgres_inventory",
-        TableDescriptor.for_connector("jdbc")
+        TableDescriptor.for_connector("postgres-cdc")
         .schema(postgres_inventory_schema)
-        .option("url", "jdbc:postgresql://sql-database:5432/postgres")
+        .option("hostname", "sql-database")
+        .option("port", "5432")
+        .option("database-name", "postgres")
         .option("table-name", "Inventory")
         .option("username", "postgres")
         .option("password", "supersecret")
+        .option("slot.name", "flink")
+        .option("schema-name", "public")
         .build())
+
+    orders = table_env.from_path("kafka_orders").select(
+        col("ProductID"),
+        col("RetailerID"),
+        col("ItemQuantity"),
+        col("OrderID")
+    )
+    inventory = table_env.from_path("postgres_inventory").select(
+        col("ProductID").alias("inventory_product_id"),
+        col("RetailerID").alias("inventory_retailer_id"),
+        col("QuantityOnHand")
+    )
+    result = (orders.left_outer_join(inventory)
+              .where((col("ProductID") == col("inventory_product_id"))
+                     & (col("RetailerID") == col("inventory_retailer_id"))))
+
+    result.execute().print()
 
 
 if __name__ == '__main__':

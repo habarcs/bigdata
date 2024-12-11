@@ -55,6 +55,8 @@ services:
 
   jobmanager:
     build: processing
+    depends_on:
+      - data-gen
     ports:
       - "8081:8081"
     command: jobmanager
