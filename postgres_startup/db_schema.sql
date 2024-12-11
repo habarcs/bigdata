@@ -45,3 +45,8 @@ CREATE TABLE "Customers"
     "Segment"    text                               NOT NULL
 );
 
+CREATE TABLE "Failed Orders"
+(
+    "OrderID" bigint PRIMARY KEY,
+    "FailureReason" text
+)
