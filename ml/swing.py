@@ -2,8 +2,11 @@ from pyflink.common.serialization import SimpleStringSchema
 from pyflink.datastream.connectors import KafkaSource
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic
-from pyflink.table import StreamTableEnvironment
-from pyflink.table.descriptors import Schema, TableDescriptor, DataTypes
+#from pyflink.table import StreamTableEnvironment
+#from pyflink.table.descriptors import Schema, TableDescriptor, DataTypes
+
+from pyflink.table import TableDescriptor, Schema, DataTypes
+
 from pyflink.ml.recommendation.swing import Swing
 
 

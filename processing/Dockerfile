@@ -14,4 +14,4 @@ COPY requirements.txt /
 RUN pip3 install -r /requirements.txt
 
 # copy python files
-COPY __main__.py /opt/
+COPY __main__.py /opt/`
