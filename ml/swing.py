@@ -1,27 +1,24 @@
-# Simple program that creates a Swing instance and gives recommendations for items.
-# See: # Simple program that creates a Swing instance and gives recommendations for items.
-
-
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.datastream.connectors import KafkaSource
 from pyflink.common.typeinfo import Types
-from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic
 from pyflink.table import StreamTableEnvironment
+from pyflink.table.descriptors import Schema, TableDescriptor, DataTypes
 from pyflink.ml.recommendation.swing import Swing
 
 
-# Creates a new StreamExecutionEnvironment
+# Create Flink Execution and Table Environments
 env = StreamExecutionEnvironment.get_execution_environment()
-
-# Creates a StreamTableEnvironment
+env.set_stream_time_characteristic(TimeCharacteristic.EventTime)
 t_env = StreamTableEnvironment.create(env)
 
-  
+# Configure External JARs
 t_env.get_config().set(
     "pipeline.jars",
-    "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-sql-connector-postgresql.jar")
+    "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-sql-connector-postgresql.jar"
+)
 
-# Define Kafka table schema
+# Define Kafka Table Schema
 kafka_schema = Schema.new_builder() \
     .column("TransactionType", DataTypes.STRING()) \
     .column("RealShippingDays", DataTypes.INT()) \
@@ -37,8 +34,11 @@ kafka_schema = Schema.new_builder() \
     .column("ShippingMode", DataTypes.STRING()) \
     .column("CustomerID", DataTypes.INT()) \
     .column("RetailerID", DataTypes.INT()) \
-    .build()  
+    .column_by_expression("event_time", "CAST(OrderDate AS TIMESTAMP(3))") \
+    .watermark("event_time", "event_time - INTERVAL '5' SECOND") \
+    .build()
 
+# Register the Kafka Table
 t_env.create_temporary_table(
     "kafka_orders",
     TableDescriptor.for_connector("kafka")
@@ -47,47 +47,48 @@ t_env.create_temporary_table(
     .option("properties.bootstrap.servers", "kafka:9092")
     .option("format", "json")
     .option("properties.group.id", "flinventory")
-    .build())   
-    
-kafka_source =t_env.from_path("kafka_orders")
-    
-    # Add Kafka source to the environment
-data_stream = env.from_source(
-    kafka_source,
-    watermark_strategy=None,  # Add a watermark strategy if needed
-    source_name="KafkaSource"
+    .build()
 )
-    
-# Parse Kafka messages into the desired format
-# Assuming messages are in the format "user_id,item_id"
-parsed_stream = data_stream.map(
-    lambda x: tuple(map(int, x.split(","))),  # Parses "user,item" into (user, item)
-    output_type=Types.TUPLE([Types.LONG(), Types.LONG()])
-)  
 
-# Convert the parsed stream to a table
+# Read data directly from the Kafka table
+kafka_table = t_env.from_path("kafka_orders")
+
+# Extract "ProductID" and "CustomerID" columns into a data stream
+product_customer_stream = t_env.to_data_stream(
+    kafka_table.select("CustomerID, ProductID")
+)
+
+# Convert to the required format for Swing
+# Assumes CustomerID corresponds to the "user" column and ProductID to the "item" column
+parsed_stream = product_customer_stream.map(
+    lambda row: (row[0], row[1]),  # (CustomerID, ProductID)
+    output_type=Types.TUPLE([Types.INT(), Types.INT()])
+)
+
+# Convert the parsed stream to a Flink Table
 input_table = t_env.from_data_stream(
     parsed_stream,
     schema=["user", "item"]
 )
 
-
-# Creates a swing object and initialize its parameters.
-swing = Swing()
-    .set_item_col('item')
-    .set_user_col("user")
+# Configure Swing Recommendation
+swing = Swing() \
+    .set_item_col('item') \
+    .set_user_col("user") \
     .set_min_user_behavior(1)
 
-# Transforms the data to Swing algorithm result.
+# Apply the Swing Algorithm
 output_table = swing.transform(input_table)
 
-# Extracts and display the results.
+# Convert the result table back to a data stream and print the output
+results = t_env.to_data_stream(output_table[0])
+
 field_names = output_table[0].get_schema().get_field_names()
 
-results = t_env.to_data_stream(
-    output_table[0]).execute_and_collect()
-
-for result in results:
+for result in results.execute_and_collect():
     main_item = result[field_names.index(swing.get_item_col())]
     item_rank_score = result[1]
-    print(f'item: {main_item}, top-k similar items: {item_rank_score}')
+    print(f'Item: {main_item}, Top-K Similar Items: {item_rank_score}')
+
+# Execute the Flink Job
+env.execute("Swing Recommendation Job")
