@@ -144,13 +144,13 @@ def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 def get_or_create_location(row, connection):
     select_query = sqlalchemy.text("""
-        SELECT "LocationID" 
-        FROM "Locations" 
-        WHERE "ZipCode" = :zipcode 
-          AND "City" = :city 
-          AND "State" = :state 
-          AND "Country" = :country 
-          AND "Region" IS NOT DISTINCT FROM :region
+        SELECT LocationID
+        FROM Locations 
+        WHERE ZipCode = :zipcode 
+          AND City = :city 
+          AND State = :state 
+          AND Country = :country 
+          AND Region IS NOT DISTINCT FROM :region
     """)
 
     # Execute the query with parameters
@@ -168,9 +168,9 @@ def get_or_create_location(row, connection):
 
     # If not found, insert a new location
     insert_query = sqlalchemy.text("""
-        INSERT INTO "Locations" ("ZipCode", "City", "State", "Country", "Region")
+        INSERT INTO Locations (ZipCode, City, State, Country, Region)
         VALUES (:zipcode, :city, :state, :country, :region)
-        RETURNING "LocationID"
+        RETURNING LocationID
     """)
 
     # Execute the insert query and return the new LocationID

@@ -8,7 +8,7 @@ def main():
     table_env = TableEnvironment.create(env_settings)
     table_env.get_config().set(
         "pipeline.jars",
-        "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-sql-connector-postgresql.jar")
+        "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-connector-jdbc.jar;file:///opt/postgresql.jar")
 
     # Define Kafka table schema
     kafka_schema = Schema.new_builder() \
@@ -49,16 +49,12 @@ def main():
     # Create Postgres sink table
     table_env.create_temporary_table(
         "postgres_inventory",
-        TableDescriptor.for_connector("postgres-cdc")
+        TableDescriptor.for_connector("jdbc")
         .schema(postgres_inventory_schema)
-        .option("hostname", "sql-database")
-        .option("port", "5432")
-        .option("database-name", "postgres")
+        .option("url", "jdbc:postgresql://sql-database:5432/postgres")
         .option("table-name", "Inventory")
         .option("username", "postgres")
         .option("password", "supersecret")
-        .option("slot.name", "flink")
-        .option("schema-name", "public")
         .build())
 
     orders = table_env.from_path("kafka_orders").select(
@@ -76,7 +72,7 @@ def main():
               .where((col("ProductID") == col("inventory_product_id"))
                      & (col("RetailerID") == col("inventory_retailer_id"))))
 
-    result.execute().print()
+    result.execute()
 
 
 if __name__ == '__main__':
