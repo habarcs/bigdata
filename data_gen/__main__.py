@@ -1,7 +1,11 @@
+import logging
 import os
 
 import pandas as pd
 from sqlalchemy import create_engine
+
+logging.basicConfig()
+logging.getLogger("sqlalchemy.engine").setLevel(logging.DEBUG)
 
 from data_gen import POSTGRES_CONNECTION
 from data_gen.create_initial_data import create_products, create_locations, create_customers, create_retailers, \
