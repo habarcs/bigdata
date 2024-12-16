@@ -22,6 +22,7 @@ def create_kafka_topics():
             print(f"Topic {topic} created")
         except Exception as e:
             print(f"Failed to create topic {topic}: {e}")
+            raise
 
 
 def acked(err, msg):
@@ -73,10 +74,10 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
     for order, retailer in zip(orders.itertuples(), retailers.itertuples()):
         with engine.connect() as conn:
             retailer_id = conn.execute(sqlalchemy.text(
-                'SELECT RetailerID from Retailers '
-                'WHERE RetailerCity LIKE :retailer_city '
-                'AND RetailerState LIKE :retailer_state '
-                'AND RetailerCountry LIKE :retailer_country'),
+                'SELECT "RetailerID" from "Retailers" '
+                'WHERE "RetailerCity" LIKE :retailer_city '
+                'AND "RetailerState" LIKE :retailer_state '
+                'AND "RetailerCountry" LIKE :retailer_country'),
                 {
                     "retailer_city": retailer.RetailerCity,
                     "retailer_state": retailer.RetailerState,
