@@ -46,7 +46,7 @@ t_env.create_temporary_table(
     "kafka_orders",
     TableDescriptor.for_connector("kafka")
     .schema(kafka_schema)
-    .option("topic", "Orders")
+    .option("topic", "orders")
     .option("properties.bootstrap.servers", "kafka:9092")
     .option("format", "json")
     .option("properties.group.id", "flinventory")

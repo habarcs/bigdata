@@ -1,52 +1,52 @@
-CREATE TABLE "Products"
+CREATE TABLE products
 (
-    "ProductID"    bigint PRIMARY KEY,
-    "ProductName"  text           NOT NULL,
-    "Category"     text           NOT NULL,
-    "ProductPrice" DECIMAL(10, 2) NOT NULL
+    product_id    bigint PRIMARY KEY,
+    product_name  text           NOT NULL,
+    category     text           NOT NULL,
+    product_price DECIMAL(10, 2) NOT NULL
 );
 
-CREATE TABLE "Retailers"
+CREATE TABLE retailers
 (
-    "RetailerID"      bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "RetailerName"    text NOT NULL,
-    "RetailerCountry" text NOT NULL,
-    "RetailerState"   text NOT NULL,
-    "RetailerCity"    text NOT NULL,
-    UNIQUE ("RetailerCountry", "RetailerState", "RetailerCity")
+    retailer_id      bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    retailer_name    text NOT NULL,
+    retailer_country text NOT NULL,
+    retailer_state   text NOT NULL,
+    retailer_city    text NOT NULL,
+    UNIQUE (retailer_country, retailer_state, retailer_city)
 );
 
-CREATE TABLE "Inventory"
+CREATE TABLE inventory
 (
-    "ProductID"      bigint REFERENCES "Products",
-    "RetailerID"     bigint REFERENCES "Retailers",
-    PRIMARY KEY ("RetailerID", "ProductID"),
-    "QuantityOnHand" integer NOT NULL,
-    "ReorderLevel"   integer NOT NULL
+    product_id      bigint references products,
+    retailer_id     bigint references retailers,
+    PRIMARY KEY (retailer_id, product_id),
+    quantity_on_hand integer NOT NULL,
+    reorder_level   integer NOT NULL
 );
 
-CREATE TABLE "Locations"
+CREATE TABLE locations
 (
-    "LocationID" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    "City"       text NOT NULL,
-    "State"      text NOT NULL,
-    "ZipCode"    text,
-    "Country"    text NOT NULL,
-    "Region"     text
+    location_id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    city       text NOT NULL,
+    state      text NOT NULL,
+    zip_code    text,
+    country    text NOT NULL,
+    region     text
 );
 
-CREATE TABLE "Customers"
+CREATE TABLE customers
 (
-    "CustomerID" bigint PRIMARY KEY,
-    "LocationID" bigint REFERENCES "Locations" NOT NULL,
-    "Market"     text                               NOT NULL,
-    "FirstName"  text                               NOT NULL,
-    "LastName"   text,
-    "Segment"    text                               NOT NULL
+    customer_id bigint PRIMARY KEY,
+    location_id bigint references locations NOT NULL,
+    market     text                               NOT NULL,
+    first_name  text                               NOT NULL,
+    last_name   text,
+    segment    text                               NOT NULL
 );
 
-CREATE TABLE "FailedOrders"
+CREATE TABLE failed_orders
 (
-    "OrderID" bigint PRIMARY KEY,
-    "FailureReason" text
+    order_id bigint PRIMARY KEY,
+    failure_reason text
 )

@@ -12,12 +12,12 @@ def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Category Name",
         "Product Price"
     ]].rename(columns={
-        "Product Card Id": "ProductID",
-        "Product Name": "ProductName",
-        "Category Name": "Category",
-        "Product Price": "ProductPrice"
+        "Product Card Id": "product_id",
+        "Product Name": "product_name",
+        "Category Name": "category",
+        "Product Price": "product_price"
     })
-    products.to_sql(name="Products",
+    products.to_sql(name="products",
                     con=engine,
                     if_exists="append",
                     index=False)
@@ -30,13 +30,13 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Customer State",
         "Customer City",
     ]].rename(columns={
-        "Customer Country": "RetailerCountry",
-        "Customer State": "RetailerState",
-        "Customer City": "RetailerCity"
+        "Customer Country": "retailer_country",
+        "Customer State": "retailer_state",
+        "Customer City": "retailer_city"
     })
-    retailers["RetailerName"] = [fake.company() for _ in retailers.index]
+    retailers["retailer_name"] = [fake.company() for _ in retailers.index]
 
-    retailers.to_sql(name="Retailers",
+    retailers.to_sql(name="retailers",
                      con=engine,
                      if_exists="append",
                      index=False)
@@ -44,17 +44,17 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 def create_inventory(_, engine: sqlalchemy.engine.Engine):
     with engine.connect() as conn:
-        retailer_ids = conn.execute(sqlalchemy.text('SELECT "RetailerID" FROM "Retailers"')).fetchall()
-        product_ids = conn.execute(sqlalchemy.text('SELECT "ProductID" FROM "Products"')).fetchall()
+        retailer_ids = conn.execute(sqlalchemy.text('SELECT retailer_id FROM retailers')).fetchall()
+        product_ids = conn.execute(sqlalchemy.text('SELECT product_id FROM products')).fetchall()
 
     retailer_ids = [retailer_id[0] for retailer_id in retailer_ids]
     product_ids = [product_id[0] for product_id in product_ids]
     df = pd.DataFrame(product(retailer_ids, product_ids),
-                      columns=["RetailerID", "ProductID"])
-    df["QuantityOnHand"] = 10000
-    df["ReorderLevel"] = 10
+                      columns=["retailer_id", "product_id"])
+    df["quantity_on_hand"] = 10000
+    df["reorder_level"] = 10
 
-    df.to_sql(name="Inventory",
+    df.to_sql(name="inventory",
               con=engine,
               if_exists="append",
               index=False)
@@ -82,20 +82,20 @@ def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
     df_customer = df[
         ['Customer Country', 'Customer Region', 'Customer State', 'Customer City', 'Customer Zipcode']].copy()
-    df_customer.columns = ['Country', 'Region', 'State', 'City', 'ZipCode']  # Standardize column names
+    df_customer.columns = ['country', 'region', 'state', 'city', 'zip_code']  # Standardize column names
 
     df_order = df[['Order Country', 'Order Region', 'Order State', 'Order City', 'Order Zipcode']].copy()
-    df_order.columns = ['Country', 'Region', 'State', 'City', 'ZipCode']  # Standardize column names
+    df_order.columns = ['country', 'region', 'state', 'city', 'zip_code']  # Standardize column names
 
     # Concatenate the customer and order addresses
     location_df = pd.concat([df_customer, df_order], axis=0)  # Stack rows
 
-    location_df["ZipCode"] = location_df["ZipCode"].apply(clean_zipcode)  # Clean up ZIP codes
+    location_df["zip_code"] = location_df["zip_code"].apply(clean_zipcode)  # Clean up ZIP codes
 
     # Drop duplicates to create a unique address DataFrame
     location_df = location_df.drop_duplicates().reset_index(drop=True)
 
-    location_df.to_sql(name="Locations",
+    location_df.to_sql(name="locations",
                        con=engine,
                        if_exists="append",
                        index=False,
@@ -115,26 +115,26 @@ def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Order City",
         "Order Zipcode"
     ]].rename(columns={
-        "Customer Id": "CustomerID",
-        "Customer Fname": "FirstName",
-        "Customer Lname": "LastName",
-        "Customer Segment": "Segment",
-        "Market": "Market",
-        "Order Country": "Country",
-        "Order Region": "Region",
-        "Order State": "State",
-        "Order City": "City",
-        "Order Zipcode": "ZipCode"
+        "Customer Id": "customer_id",
+        "Customer Fname": "first_name",
+        "Customer Lname": "last_name",
+        "Customer Segment": "segment",
+        "Market": "market",
+        "Order Country": "country",
+        "Order Region": "region",
+        "Order State": "state",
+        "Order City": "city",
+        "Order Zipcode": "zip_code"
     })
-    customers["ZipCode"] = customers["ZipCode"].apply(clean_zipcode)
+    customers["zip_code"] = customers["zip_code"].apply(clean_zipcode)
 
     # Add LocationID by matching existing locations or inserting new ones
     with engine.connect() as connection:
-        customers["LocationID"] = customers.apply(lambda row: get_or_create_location(row, connection), axis=1)
+        customers["location_id"] = customers.apply(lambda row: get_or_create_location(row, connection), axis=1)
 
     # Save the customer data to the database
-    customers = customers[["CustomerID", "FirstName", "LastName", "Segment", "Market", "LocationID"]]
-    customers.to_sql(name="Customers",
+    customers = customers[["customer_id", "first_name", "last_name", "segment", "market", "location_id"]]
+    customers.to_sql(name="customers",
                      con=engine,
                      if_exists="append",
                      index=False)
@@ -142,22 +142,22 @@ def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 def get_or_create_location(row, connection):
     select_query = sqlalchemy.text("""
-        SELECT "LocationID" 
-        FROM "Locations" 
-        WHERE "ZipCode" = :zipcode 
-          AND "City" = :city 
-          AND "State" = :state 
-          AND "Country" = :country 
-          AND "Region" IS NOT DISTINCT FROM :region
+        SELECT location_id 
+        FROM locations 
+        WHERE zip_code = :zipcode 
+          AND city = :city 
+          AND state = :state 
+          AND country = :country 
+          AND region IS NOT DISTINCT FROM :region
     """)
 
     # Execute the query with parameters
     result = connection.execute(select_query, {
-        "zipcode": row["ZipCode"],
-        "city": row["City"],
-        "state": row["State"],
-        "country": row["Country"],
-        "region": row["Region"]
+        "zipcode": row["zip_code"],
+        "city": row["city"],
+        "state": row["state"],
+        "country": row["country"],
+        "region": row["region"]
     }).fetchone()
 
     # If location exists, return its LocationID
@@ -166,18 +166,18 @@ def get_or_create_location(row, connection):
 
     # If not found, insert a new location
     insert_query = sqlalchemy.text("""
-        INSERT INTO "Locations" ("ZipCode", "City", "State", "Country", "Region")
+        INSERT INTO locations (zip_code, city, state, country, region)
         VALUES (:zipcode, :city, :state, :country, :region)
-        RETURNING "LocationID"
+        RETURNING location_id
     """)
 
     # Execute the insert query and return the new LocationID
     result = connection.execute(insert_query, {
-        "zipcode": row["ZipCode"],
-        "city": row["City"],
-        "state": row["State"],
-        "country": row["Country"],
-        "region": row["Region"]
+        "zipcode": row["zip_code"],
+        "city": row["city"],
+        "state": row["state"],
+        "country": row["country"],
+        "region": row["region"]
     }).fetchone()
 
     return result[0]

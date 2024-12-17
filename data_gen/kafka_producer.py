@@ -13,7 +13,7 @@ from data_gen import KAFKA_CONF
 def create_kafka_topics():
     admin_client = AdminClient(KAFKA_CONF)
     new_topics = [
-        NewTopic("Orders")
+        NewTopic("orders")
     ]
     fs = admin_client.create_topics(new_topics)
     for topic, f in fs.items():
@@ -47,52 +47,52 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                  "Shipping Mode",
                  "Customer Id",
                  ]].rename(columns={
-        "Type": "TransactionType",
-        "Days for shipping (real)": "RealShippingDays",
-        "Days for shipment (scheduled)": "ScheduledShippingDays",
-        "Delivery Status": "DeliveryStatus",
-        "Late_delivery_risk": "LateRisk",
-        "order date (DateOrders)": "OrderDate",
-        "Order Id": "OrderID",
-        "Product Card Id": "ProductID",
-        "Order Item Quantity": "ItemQuantity",
-        "Order Status": "Status",
-        "shipping date (DateOrders)": "ShippingData",
-        "Shipping Mode": "ShippingMode",
-        "Customer Id": "CustomerID",
+        "Type": "transaction_type",
+        "Days for shipping (real)": "real_shipping_days",
+        "Days for shipment (scheduled)": "scheduled_shipping_days",
+        "Delivery Status": "delivery_status",
+        "Late_delivery_risk": "late_risk",
+        "order date (DateOrders)": "order_date",
+        "Order Id": "order_id",
+        "Product Card Id": "product_id",
+        "Order Item Quantity": "item_quantity",
+        "Order Status": "status",
+        "shipping date (DateOrders)": "shipping_data",
+        "Shipping Mode": "shipping_mode",
+        "Customer Id": "customer_id",
     })
     retailers = df[[
         "Customer City",
         "Customer State",
         "Customer Country"
     ]].rename(columns={
-        "Customer City": "RetailerCity",
-        "Customer State": "RetailerState",
-        "Customer Country": "RetailerCountry"
+        "Customer City": "retailer_city",
+        "Customer State": "retailer_state",
+        "Customer Country": "retailer_country"
     })
 
     for order, retailer in zip(orders.itertuples(), retailers.itertuples()):
         with engine.connect() as conn:
             retailer_id = conn.execute(sqlalchemy.text(
-                'SELECT "RetailerID" from "Retailers" '
-                'WHERE "RetailerCity" LIKE :retailer_city '
-                'AND "RetailerState" LIKE :retailer_state '
-                'AND "RetailerCountry" LIKE :retailer_country'),
+                'SELECT retailer_id from retailers '
+                'WHERE retailer_city LIKE :retailer_city '
+                'AND retailer_state LIKE :retailer_state '
+                'AND retailer_country LIKE :retailer_country'),
                 {
-                    "retailer_city": retailer.RetailerCity,
-                    "retailer_state": retailer.RetailerState,
-                    "retailer_country": retailer.RetailerCountry
+                    "retailer_city": retailer.retailer_city,
+                    "retailer_state": retailer.retailer_state,
+                    "retailer_country": retailer.retailer_country
                 }).fetchone()[0]
             order_dict = order._asdict()
-            order_dict["RetailerID"] = retailer_id
+            order_dict["retailer_id"] = retailer_id
             del order_dict["Index"]
         yield order_dict
 
 
 def send_event(producer: Producer, order: dict):
-    key = str(order["OrderID"])
+    key = str(order["order_id"])
     producer.poll(0)
-    producer.produce("Orders", key=key, value=json.dumps(order), callback=acked)
+    producer.produce("orders", key=key, value=json.dumps(order), callback=acked)
 
 
 def event_generation_loop(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
