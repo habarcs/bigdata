@@ -21,22 +21,22 @@ t_env.get_config().set(
     "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-sql-connector-postgresql.jar"
 )
 
-# Define Kafka Table Schema
+# Define Kafka Table Schema CHANFE LOWE CASER
 kafka_schema = Schema.new_builder() \
-    .column("TransactionType", DataTypes.STRING()) \
-    .column("RealShippingDays", DataTypes.INT()) \
-    .column("ScheduledShippingDays", DataTypes.INT()) \
-    .column("DeliveryStatus", DataTypes.STRING()) \
-    .column("LateRisk", DataTypes.INT()) \
-    .column("OrderDate", DataTypes.STRING()) \
-    .column("OrderID", DataTypes.INT()) \
-    .column("ProductID", DataTypes.INT()) \
-    .column("ItemQuantity", DataTypes.INT()) \
-    .column("Status", DataTypes.STRING()) \
-    .column("ShippingData", DataTypes.STRING()) \
-    .column("ShippingMode", DataTypes.STRING()) \
-    .column("CustomerID", DataTypes.INT()) \
-    .column("RetailerID", DataTypes.INT()) \
+    .column("transaction_type", DataTypes.STRING()) \
+    .column("real_shipping_days", DataTypes.INT()) \
+    .column("scheduled_shipping_days", DataTypes.INT()) \
+    .column("delivery_status", DataTypes.STRING()) \
+    .column("late_risk", DataTypes.INT()) \
+    .column("order_date", DataTypes.STRING()) \
+    .column("order_id", DataTypes.INT()) \
+    .column("product_id", DataTypes.INT()) \
+    .column("item_quantity", DataTypes.INT()) \
+    .column("status", DataTypes.STRING()) \
+    .column("shipping_data", DataTypes.STRING()) \
+    .column("shipping_mode", DataTypes.STRING()) \
+    .column("customer_id", DataTypes.INT()) \
+    .column("retailer_id", DataTypes.INT()) \
     .column_by_expression("event_time", "CAST(OrderDate AS TIMESTAMP(3))") \
     .watermark("event_time", "event_time - INTERVAL '5' SECOND") \
     .build()
@@ -49,7 +49,9 @@ t_env.create_temporary_table(
     .option("topic", "orders")
     .option("properties.bootstrap.servers", "kafka:9092")
     .option("format", "json")
-    .option("properties.group.id", "flinventory")
+    .option("properties.group.id", "swingventory")
+    .option("scan.startup.mode", "group-offsets")
+    .option('properties.auto.offset.reset', 'earliest')
     .build()
 )
 
@@ -58,7 +60,7 @@ kafka_table = t_env.from_path("kafka_orders")
 
 # Extract "ProductID" and "CustomerID" columns into a data stream
 product_customer_stream = t_env.to_data_stream(
-    kafka_table.select("CustomerID, ProductID")
+    kafka_table.select("CustomerID, ProductID") #change lc
 )
 
 # Convert to the required format for Swing
