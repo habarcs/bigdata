@@ -44,6 +44,8 @@ def main():
         .option("properties.bootstrap.servers", "kafka:9092")
         .option("format", "json")
         .option("properties.group.id", "flinventory")
+        .option("scan.startup.mode", "group-offsets")
+        .option('properties.auto.offset.reset', 'earliest')
         .build())
 
     # Create Postgres sink table
