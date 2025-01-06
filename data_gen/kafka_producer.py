@@ -4,7 +4,7 @@ import time
 
 import pandas as pd
 import sqlalchemy
-from confluent_kafka import Producer
+from confluent_kafka import Producer, KafkaError, KafkaException
 from confluent_kafka.admin import AdminClient, NewTopic
 
 from data_gen import KAFKA_CONF
@@ -20,6 +20,12 @@ def create_kafka_topics():
         try:
             f.result()
             print(f"Topic {topic} created")
+        except KafkaException as e:
+            if e.args[0].code() == KafkaError.TOPIC_ALREADY_EXISTS:
+                print(f"Topic {topic} already exists")
+            else:
+                print(f"Failed to create topic {topic}: {e}")
+                raise
         except Exception as e:
             print(f"Failed to create topic {topic}: {e}")
             raise
