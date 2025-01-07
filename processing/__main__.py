@@ -6,6 +6,7 @@ def main():
     # Create a streaming TableEnvironment
     env_settings = EnvironmentSettings.in_streaming_mode()
     table_env = TableEnvironment.create(env_settings)
+    table_env.get_config().set("python.execution-mode", "thread")
     table_env.get_config().set(
         "pipeline.jars",
         "file:///opt/flink-sql-connector-kafka.jar;file:///opt/flink-connector-jdbc.jar;file:///opt/postgresql.jar")

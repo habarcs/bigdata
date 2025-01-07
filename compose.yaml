@@ -59,11 +59,12 @@ services:
       - data-gen
     ports:
       - "8081:8081"
-    command: jobmanager
+    command: standalone-job --python /opt/__main__.py
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+        execution.shutdown-on-application-finish: false
 
   taskmanager:
     build: processing
