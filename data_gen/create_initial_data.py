@@ -3,6 +3,7 @@ from itertools import product
 import faker
 import pandas as pd
 import sqlalchemy
+import numpy as np
 
 
 def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
@@ -51,8 +52,9 @@ def create_inventory(_, engine: sqlalchemy.engine.Engine):
     product_ids = [product_id[0] for product_id in product_ids]
     df = pd.DataFrame(product(retailer_ids, product_ids),
                       columns=["retailer_id", "product_id"])
-    df["quantity_on_hand"] = 10000
-    df["reorder_level"] = 10
+    np.random.seed = 3154257842
+    df["quantity_on_hand"] = np.random.randint(100, 10000, df.shape[0])
+    df["reorder_level"] = np.random.randint(0, 10000, df.shape[0])
 
     df.to_sql(name="inventory",
               con=engine,

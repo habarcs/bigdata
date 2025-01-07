@@ -48,7 +48,8 @@ services:
   data-gen:
     build: data_gen
     healthcheck:
-      test: [ "CMD-SHELL", "python", "-u", "-m", "data_gen.health_check"  ]
+      test:
+        bash -c "[ -f /run/produce.ready ]"
       interval: 1s
       timeout: 60s
       retries: 60

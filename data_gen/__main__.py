@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -26,6 +27,7 @@ def main():
     create_inventory(df, engine)
 
     create_kafka_topics()
+    Path("/run/produce.ready").touch()
     event_generation_loop(df, engine)
 
 
