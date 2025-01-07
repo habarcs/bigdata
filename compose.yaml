@@ -47,6 +47,11 @@ services:
 
   data-gen:
     build: data_gen
+    healthcheck:
+      test: [ "CMD-SHELL", "python", "-u", "-m", "data_gen.health_check"  ]
+      interval: 1s
+      timeout: 60s
+      retries: 60
     depends_on:
       kafka:
         condition: service_healthy
@@ -56,7 +61,8 @@ services:
   jobmanager:
     build: processing
     depends_on:
-      - data-gen
+      data-gen:
+        condition: service_healthy
     ports:
       - "8081:8081"
     command: standalone-job --python /opt/__main__.py
