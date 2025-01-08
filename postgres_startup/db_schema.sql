@@ -2,7 +2,7 @@ CREATE TABLE products
 (
     product_id    bigint PRIMARY KEY,
     product_name  text           NOT NULL,
-    category     text           NOT NULL,
+    category      text           NOT NULL,
     product_price DECIMAL(10, 2) NOT NULL
 );
 
@@ -18,35 +18,29 @@ CREATE TABLE retailers
 
 CREATE TABLE inventory
 (
-    product_id      bigint references products,
-    retailer_id     bigint references retailers,
+    product_id       bigint references products,
+    retailer_id      bigint references retailers,
     PRIMARY KEY (retailer_id, product_id),
     quantity_on_hand integer NOT NULL,
-    reorder_level   integer NOT NULL
+    reorder_level    integer NOT NULL
 );
 
 CREATE TABLE locations
 (
     location_id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    city       text NOT NULL,
-    state      text NOT NULL,
+    city        text NOT NULL,
+    state       text NOT NULL,
     zip_code    text,
-    country    text NOT NULL,
-    region     text
+    country     text NOT NULL,
+    region      text
 );
 
 CREATE TABLE customers
 (
     customer_id bigint PRIMARY KEY,
     location_id bigint references locations NOT NULL,
-    market     text                               NOT NULL,
-    first_name  text                               NOT NULL,
+    market      text                        NOT NULL,
+    first_name  text                        NOT NULL,
     last_name   text,
-    segment    text                               NOT NULL
+    segment     text                        NOT NULL
 );
-
-CREATE TABLE failed_orders
-(
-    order_id bigint PRIMARY KEY,
-    failure_reason text
-)

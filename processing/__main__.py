@@ -1,5 +1,5 @@
 from pyflink.table import EnvironmentSettings, TableEnvironment, TableDescriptor, Schema, DataTypes
-from pyflink.table.expressions import col
+from pyflink.table.expressions import col, call
 
 
 def main():
@@ -84,7 +84,7 @@ def main():
         .select(
             col('inventory_product_id').alias("product_id"),
             col('inventory_retailer_id').alias("retailer_id"),
-            (col('quantity_on_hand') - col('item_quantity')).alias("quantity_on_hand"),
+            call("GREATEST", col('quantity_on_hand') - col('item_quantity'), 0).alias("quantity_on_hand"),
             col('reorder_level')
         )
     )
