@@ -1,12 +1,14 @@
 from itertools import product
 
 import faker
+import numpy as np
 import pandas as pd
 import sqlalchemy
-import numpy as np
 
 
 def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    if data_already_created(engine, "products"):
+        return
     products = df.drop_duplicates(subset="Product Card Id", keep="first")[[
         "Product Card Id",
         "Product Name",
@@ -22,9 +24,12 @@ def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                     con=engine,
                     if_exists="append",
                     index=False)
+    set_data_created(engine, "products")
 
 
 def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    if data_already_created(engine, "retailers"):
+        return
     fake = faker.Faker()
     retailers = df.drop_duplicates(subset=["Customer City", "Customer State", "Customer Country"], keep="first")[[
         "Customer Country",
@@ -41,9 +46,12 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                      con=engine,
                      if_exists="append",
                      index=False)
+    set_data_created(engine, "retailers")
 
 
 def create_inventory(_, engine: sqlalchemy.engine.Engine):
+    if data_already_created(engine, "inventory"):
+        return
     with engine.connect() as conn:
         retailer_ids = conn.execute(sqlalchemy.text('SELECT retailer_id FROM retailers')).fetchall()
         product_ids = conn.execute(sqlalchemy.text('SELECT product_id FROM products')).fetchall()
@@ -60,9 +68,12 @@ def create_inventory(_, engine: sqlalchemy.engine.Engine):
               con=engine,
               if_exists="append",
               index=False)
+    set_data_created(engine, "inventory")
 
 
 def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    if data_already_created(engine, "locations"):
+        return
     # map the Customer Region from Customer State (as it was not given)
     state_to_region = {
         'CA': 'West of USA', 'OR': 'West of USA', 'WA': 'West of USA', 'NV': 'West of USA',
@@ -102,9 +113,12 @@ def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                        if_exists="append",
                        index=False,
                        )
+    set_data_created(engine, "locations")
 
 
 def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    if data_already_created(engine, "customers"):
+        return
     customers = df.drop_duplicates(subset=["Customer Id"], keep="last")[[
         "Customer Id",
         "Customer Fname",
@@ -140,6 +154,7 @@ def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
                      con=engine,
                      if_exists="append",
                      index=False)
+    set_data_created(engine, "customers")
 
 
 def get_or_create_location(row, connection):
@@ -189,3 +204,23 @@ def clean_zipcode(zipcode):
     if pd.isna(zipcode):
         return ''
     return str(int(zipcode))
+
+
+def data_already_created(engine: sqlalchemy.engine.Engine, creator: str) -> bool:
+    with engine.connect() as conn:
+        created = conn.execute(sqlalchemy.text('SELECT created FROM data_gen WHERE module LIKE :creator'),
+                               {"creator": creator}).fetchall()
+    if not created:
+        return False
+    return created[0][0]
+
+
+def set_data_created(engine: sqlalchemy.engine.Engine, creator: str, value: bool = True):
+    with engine.connect() as conn:
+        res = conn.execute(sqlalchemy.text('INSERT into data_gen (module, created) '
+                                           'VALUES (:creator, :value) '
+                                           'ON CONFLICT (module)'
+                                           'DO UPDATE SET '
+                                           'created = :value'),
+                           {"creator": creator, "value": value})
+        conn.commit()

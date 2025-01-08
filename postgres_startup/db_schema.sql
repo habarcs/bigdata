@@ -44,3 +44,9 @@ CREATE TABLE customers
     last_name   text,
     segment     text                        NOT NULL
 );
+
+CREATE TABLE data_gen
+(
+    module  text PRIMARY KEY,
+    created boolean
+)
