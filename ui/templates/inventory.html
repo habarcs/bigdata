@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Management{% endblock %}
+
+{% block content %}
+
+<form id="inventory-search-form">
+    <label for="retailers">Select Retailers:</label>
+    <select id="retailers" name="retailers" multiple="multiple" style="width: 300px;">
+        {% for retailer in retailers %}
+        <option value="{{ retailer.id }}">{{ retailer.name }}</option>
+        {% endfor %}
+    </select>
+    
+    <label for="products">Select Products:</label>
+    <select id="products" name="products" multiple="multiple" style="width: 300px;">
+        {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+        {% endfor %}
+    </select>
+    
+    <button type="submit">Search</button>
+</form>
+
+<table id="inventory-table" border="1" style="margin-top: 20px; width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            <th>Retailer Name</th>
+            <th>Product Name</th>
+            <th>Quantity on Hand</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#retailers, #products').select2();
+
+        $('#inventory-search-form').submit(function(e) {
+            e.preventDefault();
+            const retailers = $('#retailers').val();
+            const products = $('#products').val();
+
+            $.ajax({
+                url: '/inventory',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ retailers, products }),
+                success: function(data) {
+                    const tbody = $('#inventory-table tbody');
+                    tbody.empty();
+                    data.forEach(row => {
+                        let statusClass = ''; 
+
+                        if (row.status === 'In Stock') {
+                            statusClass = 'status-in-stock';
+                        } else if (row.status === 'Low Stock') {
+                            statusClass = 'status-low-stock';
+                        } else if (row.status === 'Out of Stock') {
+                            statusClass = 'status-out-of-stock';
+                        }
+
+                        tbody.append(`
+                            <tr>
+                                <td>${row.retailer_name}</td>
+                                <td>${row.product_name}</td>
+                                <td>${row.quantity_on_hand}</td>
+                                <td class="${statusClass}">${row.status}</td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
