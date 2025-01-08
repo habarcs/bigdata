@@ -39,6 +39,10 @@ def acked(err, msg):
 
 
 def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    df.assign(
+        order_date=pd.to_datetime(df['order date (DateOrders)'], format="%m/%d/%Y %H:%M", errors="coerce")
+    ).sort_values(by='order_date', ascending=True).drop(columns=['order_date']).reset_index(drop=True)
+    
     orders = df[["Type",
                  "Days for shipping (real)",
                  "Days for shipment (scheduled)",
@@ -67,6 +71,7 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Shipping Mode": "shipping_mode",
         "Customer Id": "customer_id",
     })
+
     retailers = df[[
         "Customer City",
         "Customer State",
