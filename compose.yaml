@@ -50,9 +50,9 @@ services:
     healthcheck:
       test:
         bash -c "[ -f /run/produce.ready ]"
-      interval: 1s
-      timeout: 60s
-      retries: 60
+      interval: 2s
+      timeout: 5s
+      retries: 480
     depends_on:
       kafka:
         condition: service_healthy
