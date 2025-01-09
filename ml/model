@@ -1,0 +1,73 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, from_json
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
+from pyspark.ml import Pipeline
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.regression import GBTRegressor
+from pyspark.ml.evaluation import RegressionEvaluator
+
+# Initialize Spark Session
+spark = SparkSession.builder \
+    .appName("Kafka-Spark-ML-Training") \
+    .getOrCreate()
+
+# Kafka Configuration
+kafka_bootstrap_servers = "localhost:9092"
+input_topic = "orders"
+
+# Define Schema for Input Data
+schema = StructType([
+    StructField("transaction_type", StringType(), True),
+    StructField("real_shipping_days", FloatType(), True),
+    StructField("scheduled_shipping_days", FloatType(), True),
+    StructField("delivery_status", StringType(), True),
+    StructField("late_risk", IntegerType(), True),
+    StructField("order_date", StringType(), True),
+    StructField("order_id", StringType(), True),
+    StructField("product_id", StringType(), True),
+    StructField("item_quantity", IntegerType(), True),
+    StructField("status", StringType(), True),
+    StructField("shipping_date", StringType(), True),
+    StructField("shipping_mode", StringType(), True),
+    StructField("customer_id", StringType(), True),
+])
+
+# Read from Kafka
+raw_stream = spark.readStream.format("kafka") \
+    .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
+    .option("subscribe", input_topic) \
+    .option("startingOffsets", "latest") \
+    .load()
+
+# Parse JSON from Kafka
+orders_stream = raw_stream.selectExpr("CAST(value AS STRING)") \
+    .select(from_json(col("value"), schema).alias("data")) \
+    .select("data.*")
+
+# Feature Engineering
+shipping_mode_indexer = StringIndexer(inputCol="shipping_mode", outputCol="shipping_mode_index")
+assembler = VectorAssembler(
+    inputCols=["scheduled_shipping_days", "late_risk", "item_quantity", "shipping_mode_index"],
+    outputCol="features"
+)
+
+# Model
+regressor = GBTRegressor(featuresCol="features", labelCol="real_shipping_days")
+
+# Pipeline
+pipeline = Pipeline(stages=[shipping_mode_indexer, assembler, regressor])
+
+# Train Model in Micro-Batches
+def process_batch(batch_df, batch_id):
+    if batch_df.count() > 0:  # Ensure there is enough data
+        pipeline_model = pipeline.fit(batch_df)
+        print(f"Trained model on batch {batch_id}")
+        # Save the model if needed
+        pipeline_model.write().overwrite().save(f"shipping_days_model_batch_{batch_id}")
+
+# Write Stream with Batch Processing for Model Training
+orders_stream.writeStream \
+    .foreachBatch(process_batch) \
+    .outputMode("append") \
+    .start() \
+    .awaitTermination()
