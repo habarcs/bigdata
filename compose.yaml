@@ -85,3 +85,10 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
 
+  flask-ui:
+    build: ui
+    depends_on:
+      data-gen:
+        condition: service_healthy
+    ports:
+      - "5000:5000"

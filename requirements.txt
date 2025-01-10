@@ -1,3 +1,4 @@
 -r data_gen/requirements.txt
 -r processing/requirements.txt
 -r ml/requirements.txt
+-r ui/requirements.txt
