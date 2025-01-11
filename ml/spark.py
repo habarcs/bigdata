@@ -44,7 +44,7 @@ class SparkDataProcessAndForecast:
         )
     
         # Store JDBC properties
-        self.jdbc_url = "jdbc:postgresql://localhost:5432/postgres" # sql-database - service name from Docker Compose
+        self.jdbc_url = "jdbc:postgresql://sql-database:5432/postgres" # sql-database - service name from Docker Compose
         self.jdbc_properties = {
             "user": "postgres",
             "password": "supersecret",
@@ -82,7 +82,7 @@ class SparkDataProcessAndForecast:
         
         kafka_stream = (
             self.spark.readStream.format("kafka")  # 
-            .option("kafka.bootstrap.servers", "localhost:9092")  #  kafka - service name from Docker Compose
+            .option("kafka.bootstrap.servers", "kafka:9092")  #  kafka - service name from Docker Compose
             .option("subscribe", "orders")
             .option("startingOffsets", "earliest")
             .load()
