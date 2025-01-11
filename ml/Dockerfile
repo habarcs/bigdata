@@ -1,5 +1,7 @@
-# Use the official Apache Flink image
-FROM apache/flink:1.20.0
+# spark/Dockerfile
+FROM bitnami/spark:3.3.4
+
+USER root
 
 # Install Python 3.8 and dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,20 +12,26 @@ RUN apt-get update && apt-get install -y \
     ln -sf /usr/bin/python3.8 /usr/bin/python3 && \
     ln -sf /usr/bin/pip3 /usr/bin/pip
 
-# Set up a virtual environment for Python 3.8
-RUN pip install virtualenv && \
-    virtualenv /opt/venv && \
-    /opt/venv/bin/pip install --upgrade pip
 
-# Copy requirements.txt and install Python dependencies
-COPY requirements.txt /opt/requirements.txt
-RUN /opt/venv/bin/pip install -r /opt/requirements.txt
+# (Optional) Install any python libraries you might need
+RUN pip3 install --no-cache-dir pyspark==3.3.4
 
-# Copy your Python script into the container
-COPY swing.py /opt/swing.py
+# Copy Postgres JDBC driver
+COPY postgresql-42.7.4.jar /opt/spark/jars/
+
+# Copy your PySpark script into /app
+COPY spark.py /app/spark.py
+
+# Ensure correct permissions
+RUN chmod +x /app/spark.py
 
 # Set the working directory
 WORKDIR /opt
 
 # Set the virtual environment as the default Python
 ENV PATH="/opt/venv/bin:$PATH"
+
+
+# but we will override the CMD in docker-compose
+CMD ["/bin/bash"]
+

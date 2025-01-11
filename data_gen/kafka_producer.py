@@ -39,7 +39,7 @@ def acked(err, msg):
 
 
 def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
-    df.assign(
+    df = df.assign(
         order_date=pd.to_datetime(df['order date (DateOrders)'], format="%m/%d/%Y %H:%M", errors="coerce")
     ).sort_values(by='order_date', ascending=True).drop(columns=['order_date']).reset_index(drop=True)
     
@@ -118,5 +118,5 @@ def event_generation_loop(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
     for order in order_generator(df, engine):
         send_event(producer, order)
-        time.sleep(1)
+        time.sleep(0.1)
     producer.flush()

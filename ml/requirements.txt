@@ -1,2 +1,4 @@
 apache-flink
 apache-flink-ml
+pyspark==3.5.4
+prophet
