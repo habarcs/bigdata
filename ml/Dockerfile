@@ -7,6 +7,7 @@ USER root
 RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
+    cron \
     zlib1g-dev \
     libffi-dev \
     libssl-dev \
@@ -26,7 +27,7 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir pyspark==3.3.4
 
 # Copy Postgres JDBC driver to the Spark jars directory
-COPY postgresql-42.7.4.jar /opt/spark/jars/postgresql-42.7.4.jar
+COPY postgresql-42.7.4.jar /opt/bitnami/spark/jars/postgresql-42.7.4.jar
 
 # Copy requirements.txt
 COPY requirements.txt /opt/requirements.txt
@@ -34,14 +35,13 @@ COPY requirements.txt /opt/requirements.txt
 # Install Python packages from requirements.txt
 RUN pip install --no-cache-dir -r /opt/requirements.txt
 
-# Copy your PySpark script into /app
+# Copy PySpark script into /app
 COPY spark.py /app/spark.py
 
-# Ensure correct permissions
-RUN chmod +x /app/spark.py
+# Add the cron job
+RUN echo "*/5 * * * * /usr/bin/spark-submit --jars /opt/spark/jars/postgresql-42.7.4.jar --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.4 /app/spark.py > /var/log/spark-job.log 2>&1" > /etc/cron.d/spark-cron && \
+    chmod 0644 /etc/cron.d/spark-cron && \
+    crontab /etc/cron.d/spark-cron
 
-# Set the working directory
-WORKDIR /app
-
-# Override CMD in docker-compose
-CMD ["/bin/bash"]
+# Ensure cron runs in the foreground
+CMD ["cron", "-f"]
