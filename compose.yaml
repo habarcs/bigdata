@@ -98,11 +98,15 @@ services:
       context: ./ml
       dockerfile: Dockerfile
     depends_on:
-      - kafka
-      - sql-database
+      data-gen:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      sql-database:
+        condition: service_healthy
     command: >
       spark-submit
-      --jars /opt/spark/jars/postgresql-42.7.4.jar
+      --jars /opt/bitnami/spark/jars/postgresql-42.7.4.jar
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.4
       /app/spark.py
     ports:
@@ -110,4 +114,5 @@ services:
     environment:
       - SPARK_OPTS=--driver-java-options=-Duser.timezone=UTC
       - PYSPARK_PYTHON=python3
+
 

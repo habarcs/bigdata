@@ -19,7 +19,7 @@ from pyspark.sql.functions import (
 import pyspark.sql.functions as F
 from prophet import Prophet
 import pandas as pd
-
+pd.DataFrame.iteritems = pd.DataFrame.items
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -241,7 +241,7 @@ class SparkDataProcessAndForecast:
         # Combine all predictions into a single DataFrame
         if future_predictions:
             predictions_df = pd.concat(future_predictions, ignore_index=True)
-            predictions_spark_df = self.spark.createDataFrame(predictions_df)
+            predictions_spark_df = self.spark.createDataFrame(predictions_df.astype(str))
             # Show predictions (or save them)
             predictions_spark_df.show(10)
         else:
@@ -315,15 +315,18 @@ def main():
     enriched_stream = pipeline.enrich_data(parsed_stream, customer_data, product_data, retailer_data)
 
     # Write to memory + wait for job to finish
-    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream,start_date="2015-06-07", end_date="2015-06-10")
+    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream,start_date="2015-01-01", end_date="2015-01-10")
 
 
     # Additional transformations
     final_df = pipeline.preprocessing(final_enriched_df)
 
     result = pipeline.prophet_forecast(final_df)
+    # Round the yhat result to integer and rename it to item_quantity
+    result = result.withColumn("yhat", F.when(F.col("yhat") < 0, 0).otherwise(F.round(col("yhat")).cast(IntegerType())))
+    result = result.withColumnRenamed("yhat", "item_quantity")
     if result.count() > 0:
-        result[['ds', 'product_id','retailer_id','yhat']].write.jdbc(
+        result[['ds', 'product_id','retailer_id','item_quantity']].write.jdbc(
                     url=pipeline.jdbc_url,
                     table='forecast',
                     mode='overwrite',
