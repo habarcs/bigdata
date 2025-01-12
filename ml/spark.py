@@ -322,13 +322,15 @@ def main():
     final_df = pipeline.preprocessing(final_enriched_df)
 
     result = pipeline.prophet_forecast(final_df)
-
-    result[['ds', 'product_id','retailer_id','yhat']].write.jdbc(
+    if result.count() > 0:
+        result[['ds', 'product_id','retailer_id','yhat']].write.jdbc(
                     url=pipeline.jdbc_url,
                     table='forecast',
                     mode='overwrite',
                     properties=pipeline.jdbc_properties,
                 )
+    else:
+        print("No data to write to the database.")
 
 
 
