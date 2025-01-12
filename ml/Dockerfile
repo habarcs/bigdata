@@ -3,21 +3,36 @@ FROM bitnami/spark:3.3.4
 
 USER root
 
-# Install Python 3.8 and dependencies
+# Install Python 3.8 manually without using add-apt-repository
 RUN apt-get update && apt-get install -y \
-    python3.8 \
-    python3.8-distutils \
-    python3-pip && \
-    apt-get clean && \
-    ln -sf /usr/bin/python3.8 /usr/bin/python3 && \
-    ln -sf /usr/bin/pip3 /usr/bin/pip
+    wget \
+    build-essential \
+    zlib1g-dev \
+    libffi-dev \
+    libssl-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev && \
+    wget https://www.python.org/ftp/python/3.8.16/Python-3.8.16.tgz && \
+    tar -xvf Python-3.8.16.tgz && \
+    cd Python-3.8.16 && \
+    ./configure --enable-optimizations && \
+    make && make install && \
+    cd .. && rm -rf Python-3.8.16 Python-3.8.16.tgz && \
+    ln -sf /usr/local/bin/python3.8 /usr/bin/python && \
+    ln -sf /usr/local/bin/pip3.8 /usr/bin/pip
 
+# Install PySpark
+RUN pip install --no-cache-dir pyspark==3.3.4
 
-# (Optional) Install any python libraries you might need
-RUN pip3 install --no-cache-dir pyspark==3.3.4
+# Copy Postgres JDBC driver to the Spark jars directory
+COPY postgresql-42.7.4.jar /opt/spark/jars/postgresql-42.7.4.jar
 
-# Copy Postgres JDBC driver
-COPY postgresql-42.7.4.jar /opt/spark/jars/
+# Copy requirements.txt
+COPY requirements.txt /opt/requirements.txt
+
+# Install Python packages from requirements.txt
+RUN pip install --no-cache-dir -r /opt/requirements.txt
 
 # Copy your PySpark script into /app
 COPY spark.py /app/spark.py
@@ -26,12 +41,7 @@ COPY spark.py /app/spark.py
 RUN chmod +x /app/spark.py
 
 # Set the working directory
-WORKDIR /opt
+WORKDIR /app
 
-# Set the virtual environment as the default Python
-ENV PATH="/opt/venv/bin:$PATH"
-
-
-# but we will override the CMD in docker-compose
+# Override CMD in docker-compose
 CMD ["/bin/bash"]
-
