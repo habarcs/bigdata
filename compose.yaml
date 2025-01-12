@@ -95,17 +95,15 @@ services:
 
   spark:
     build:
-      context: ./spark
+      context: ./ml  
       dockerfile: Dockerfile
     depends_on:
       - kafka
       - sql-database
-    # If you want to run spark-submit automatically each time the container starts:
     command: >
       spark-submit
       --jars /opt/spark/jars/postgresql-42.7.4.jar
       /app/spark.py
-      
     ports:
       - "4040:4040"
     environment:
