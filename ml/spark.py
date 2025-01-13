@@ -221,7 +221,7 @@ class SparkDataProcessAndForecast:
                 continue
 
             # Initialize Prophet model
-            model = Prophet()
+            model = Prophet(yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False)    
             model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
             model.fit(df)
 
