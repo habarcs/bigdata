@@ -32,6 +32,14 @@
         </tr>
     </thead>
     <tbody>
+        {% for row in inventory_data %}
+        <tr>
+            <td>{{ row.retailer_name }}</td>
+            <td>{{ row.product_name }}</td>
+            <td>{{ row.quantity_on_hand }}</td>
+            <td class="{{ 'status-' + row.status | lower | replace(' ', '-') }}">{{ row.status }}</td>
+        </tr>
+        {% endfor %}
     </tbody>
 </table>
 
@@ -81,5 +89,6 @@
         });
     });
 </script>
+
 {% endblock %}
 

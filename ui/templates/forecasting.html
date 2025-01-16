@@ -3,7 +3,45 @@
 {% block title %}Demand Forecasting{% endblock %}
 
 {% block content %}
+<div class="container">
+    <form method="POST">
+        <div class="form-group">
+            <label for="retailer_id">Select Retailer:</label>
+            <select name="retailer_id" id="retailer_id" class="form-control" required>
+                <option value="">-- Select Retailer --</option>
+                {% for retailer in retailers %}
+                    <option value="{{ retailer.id }}">{{ retailer.id }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
+        <div class="form-group">
+            <label for="product_id">Select Product:</label>
+            <select name="product_id" id="product_id" class="form-control" required>
+                <option value="">-- Select Product --</option>
+                {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.id }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <!-- Display forecast plot -->
+    {% if graph_html %}
+        <div class="mt-4">
+            <div>
+                {{ graph_html | safe }}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Display error message if no data -->
+    {% if error %}
+        <div class="alert alert-danger mt-4">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}
-
