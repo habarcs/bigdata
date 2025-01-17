@@ -18,13 +18,11 @@ def inventory():
     if request.method == 'GET':
         with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
             with conn.cursor() as cur:
-                # Fetch retailers and products
                 cur.execute("SELECT retailer_id, retailer_name FROM retailers")
                 retailers = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
                 cur.execute("SELECT product_id, product_name FROM products")
                 products = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
                 
-                # Fetch the first 10 inventory items
                 cur.execute("""
                     SELECT 
                         r.retailer_name,
@@ -97,11 +95,9 @@ def inventory():
 def forecasting():
     with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
         with conn.cursor() as cur:
-            # Fetch retailers with their names
             cur.execute("SELECT retailer_id, retailer_name FROM retailers")
             retailers = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
 
-            # Fetch products with their names
             cur.execute("SELECT product_id, product_name FROM products")
             products = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
 
@@ -112,7 +108,6 @@ def forecasting():
         retailer_id = request.form['retailer_id']
         product_id = request.form['product_id']
 
-        # Fetch the retailer and product names from the database based on the selected IDs
         with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
             with conn.cursor() as cur:
                 cur.execute("""
@@ -131,7 +126,6 @@ def forecasting():
                 product_row = cur.fetchone()
                 product_name = product_row[0] if product_row else None
 
-                # Fetch forecast data for the selected retailer and product
                 cur.execute("""
                     SELECT ds, item_quantity
                     FROM forecast
@@ -140,15 +134,12 @@ def forecasting():
                 """, (retailer_id, product_id))
                 data = cur.fetchall()
 
-        # If no data is available, pass an error message to the template
         if not data:
             error = "There is no sufficient data to make a demand prediction."
             return render_template('forecasting.html', retailers=retailers, products=products, error=error)
 
-        # Convert the fetched data to a Pandas DataFrame
         df = pd.DataFrame(data, columns=['ds', 'item_quantity'])
 
-        # Generate the interactive plot with the product name and retailer name in the title
         fig = px.line(df, x='ds', y='item_quantity', 
                       title=f'Demand Forecast for Product <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
                       labels={'ds': 'Date', 'item_quantity': 'Predicted Demand'},
@@ -156,7 +147,6 @@ def forecasting():
         graph_html = fig.to_html(full_html=False)
 
         return render_template('forecasting.html', graph_html=graph_html, retailers=retailers, products=products)
-
     
 
 if __name__ == '__main__':
