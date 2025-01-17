@@ -3,7 +3,7 @@ import plotly.express as px
 import pandas as pd
 from flask import Flask, render_template, request, jsonify
 
-POSTGRES_CONNECTION = "host=localhost dbname=postgres user=postgres password=supersecret port=5432"
+POSTGRES_CONNECTION = "host=sql-database dbname=postgres user=postgres password=supersecret port=5432"
 
 app = Flask(__name__)
 
