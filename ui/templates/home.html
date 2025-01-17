@@ -3,16 +3,14 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div style="width: calc(100% - 40px); padding: 0 20px; margin: 20px auto;">
-    <h3 style="margin: 0;">Bla bla explain how to use the website</h3>
-</div>
 
+</div>
 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; padding: 20px;">
     <a href="{{ url_for('inventory') }}" 
        style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
         <h2>Inventory Management</h2>
         <p>Monitor stock levels, reorder items, and ensure product availability.</p>
-        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 280px;">
+        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
             <iframe 
                 src="{{ url_for('inventory') }}" 
                 style="width: 100%; height: 100%; border: none; pointer-events: none;" 
@@ -25,7 +23,7 @@
        style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
         <h2>Demand Forecasting</h2>
         <p>Analyze trends and predict future demand for your products.</p>
-        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 280px;">
+        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
             <iframe 
                 src="{{ url_for('forecasting') }}" 
                 style="width: 100%; height: 100%; border: none; pointer-events: none;" 

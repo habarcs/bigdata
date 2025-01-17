@@ -93,27 +93,45 @@ def inventory():
             return jsonify(data)
 
 
-
 @app.route('/forecasting', methods=['GET', 'POST'])
 def forecasting():
     with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT retailer_id FROM forecast")
-            retailers = [{'id': row[0]} for row in cur.fetchall()]
-            cur.execute("SELECT product_id FROM forecast")
-            products = [{'id': row[0]} for row in cur.fetchall()]
+            # Fetch retailers with their names
+            cur.execute("SELECT retailer_id, retailer_name FROM retailers")
+            retailers = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
+
+            # Fetch products with their names
+            cur.execute("SELECT product_id, product_name FROM products")
+            products = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
 
     if request.method == 'GET':
         return render_template('forecasting.html', retailers=retailers, products=products)
 
     elif request.method == 'POST':
-        # Fetch selected retailer and product IDs from the form
         retailer_id = request.form['retailer_id']
         product_id = request.form['product_id']
 
-        # Query the forecast table for the selected retailer and product
+        # Fetch the retailer and product names from the database based on the selected IDs
         with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
             with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT retailer_name
+                    FROM retailers
+                    WHERE retailer_id = %s
+                """, (retailer_id,))
+                retailer_row = cur.fetchone()
+                retailer_name = retailer_row[0] if retailer_row else None
+
+                cur.execute("""
+                    SELECT product_name
+                    FROM products
+                    WHERE product_id = %s
+                """, (product_id,))
+                product_row = cur.fetchone()
+                product_name = product_row[0] if product_row else None
+
+                # Fetch forecast data for the selected retailer and product
                 cur.execute("""
                     SELECT ds, item_quantity
                     FROM forecast
@@ -122,19 +140,24 @@ def forecasting():
                 """, (retailer_id, product_id))
                 data = cur.fetchall()
 
-        # Convert the data to a Pandas DataFrame
+        # If no data is available, pass an error message to the template
+        if not data:
+            error = "There is no sufficient data to make a demand prediction."
+            return render_template('forecasting.html', retailers=retailers, products=products, error=error)
+
+        # Convert the fetched data to a Pandas DataFrame
         df = pd.DataFrame(data, columns=['ds', 'item_quantity'])
 
-        # Generate the interactive plot
+        # Generate the interactive plot with the product name and retailer name in the title
         fig = px.line(df, x='ds', y='item_quantity', 
-                      title=f'Demand Forecast for Product <b>{product_id}</b> at Retailer <b>{retailer_id}</b>',
+                      title=f'Demand Forecast for Product <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
                       labels={'ds': 'Date', 'item_quantity': 'Predicted Demand'},
                       template='plotly_white')
         graph_html = fig.to_html(full_html=False)
 
-        # Return the plot in the response
         return render_template('forecasting.html', graph_html=graph_html, retailers=retailers, products=products)
 
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
