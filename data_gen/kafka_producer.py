@@ -1,6 +1,7 @@
 import json
 import signal
 import time
+from datetime import datetime
 
 import pandas as pd
 import sqlalchemy
@@ -42,7 +43,7 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
     df = df.assign(
         order_date=pd.to_datetime(df['order date (DateOrders)'], format="%m/%d/%Y %H:%M", errors="coerce")
     ).sort_values(by='order_date', ascending=True).drop(columns=['order_date']).reset_index(drop=True)
-    
+
     orders = df[["Type",
                  "Days for shipping (real)",
                  "Days for shipment (scheduled)",
@@ -100,8 +101,16 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         yield order_dict
 
 
+def get_unix_daystamp(date: str) -> int:
+    reference_date_str = "1/1/1970"
+    date_obj = datetime.strptime(date, "%m/%d/%Y %H:%M")
+    reference_date = datetime.strptime(reference_date_str, "%m/%d/%Y")
+    days = (date_obj - reference_date).days
+    return days
+
+
 def send_event(producer: Producer, order: dict):
-    key = str(order["order_id"])
+    key = str(get_unix_daystamp(order.get("order_date")))
     producer.poll(0)
     producer.produce("orders", key=key, value=json.dumps(order), callback=acked)
 
