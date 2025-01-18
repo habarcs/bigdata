@@ -40,7 +40,7 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Customer State": "retailer_state",
         "Customer City": "retailer_city"
     })
-    retailers["retailer_name"] = [fake.company() for _ in retailers.index]
+    retailers["retailer_name"] = [fake.unique.company() for _ in retailers.index]
 
     retailers.to_sql(name="retailers",
                      con=engine,
