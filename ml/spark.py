@@ -1,5 +1,6 @@
 import time
 import warnings
+
 warnings.filterwarnings("ignore")
 import logging
 
@@ -19,22 +20,24 @@ from pyspark.sql.functions import (
 import pyspark.sql.functions as F
 from prophet import Prophet
 import pandas as pd
+
 pd.DataFrame.iteritems = pd.DataFrame.items
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class SparkDataProcessAndForecast:
     def __init__(self, retries=5, delay=5):
         """
         Initialize the Spark session and set class-level configurations.
         """
-        
+
         # Create Spark Session
         # https://jdbc.postgresql.org/download/postgresql-42.7.4.jar - source link for spark connector
         logger.info("Initializing Spark session...")
-        
+
         self.spark = (
             SparkSession.builder.appName("KafkaSparkConnector")
             .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.4") \
@@ -42,9 +45,9 @@ class SparkDataProcessAndForecast:
             .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
             .getOrCreate()
         )
-    
+
         # Store JDBC properties
-        self.jdbc_url = "jdbc:postgresql://sql-database:5432/postgres" # sql-database - service name from Docker Compose
+        self.jdbc_url = "jdbc:postgresql://sql-database:5432/postgres"  # sql-database - service name from Docker Compose
         self.jdbc_properties = {
             "user": "postgres",
             "password": "supersecret",
@@ -79,10 +82,10 @@ class SparkDataProcessAndForecast:
         Read a streaming DataFrame from Kafka.
         """
         logger.info("Reading data from Kafka stream...")
-        
+
         kafka_stream = (
             self.spark.readStream.format("kafka")  # 
-            .option("kafka.bootstrap.servers", "kafka:9092")  #  kafka - service name from Docker Compose
+            .option("kafka.bootstrap.servers", "kafka:9092")  # kafka - service name from Docker Compose
             .option("subscribe", "orders")
             .option("startingOffsets", "earliest")
             .load()
@@ -101,7 +104,7 @@ class SparkDataProcessAndForecast:
         Connect to Postgres with retry logic. Returns customer, product, and retailer dataframes.
         """
         logger.info("Connecting to Postgres with retries...")
-        
+
         for attempt in range(self.retries):
             try:
                 customer_data = self.spark.read.jdbc(
@@ -137,7 +140,6 @@ class SparkDataProcessAndForecast:
             )
             .withColumn("on_time", when(col("shipping_delay") <= 0, 1).otherwise(0))
         )
-        
 
         return enriched_stream
 
@@ -161,9 +163,9 @@ class SparkDataProcessAndForecast:
         if start_date and end_date:
             final_enriched_df = self.spark.sql(
                 f"SELECT * FROM enriched_data WHERE order_timestamp >= '{start_date}' AND order_timestamp <= '{end_date}'")
-        else: 
-        # Read data from in-memory table
-           final_enriched_df = self.spark.sql("SELECT * FROM enriched_data")
+        else:
+            # Read data from in-memory table
+            final_enriched_df = self.spark.sql("SELECT * FROM enriched_data")
         return final_enriched_df
 
     def preprocessing(self, df):
@@ -171,8 +173,7 @@ class SparkDataProcessAndForecast:
         Perform additional transformations on the final enriched DataFrame (e.g. timestamps, shipping duration).
         """
         logger.info("Starting the preprocessing...")
-        
-        
+
         df_transformed = df.withColumn(
             "order_date", to_timestamp(col("order_date"), "MM/dd/yyyy HH:mm")
         ).withColumn(
@@ -197,10 +198,8 @@ class SparkDataProcessAndForecast:
             .orderBy("ds", "retailer_id", "product_id")
         )
         logger.info("Finished the preprocessing...")
-        
 
         return aggregated_data.toPandas()
-        
 
     def prophet_forecast(self, final_df_pandas, days=7):
         """
@@ -221,7 +220,7 @@ class SparkDataProcessAndForecast:
                 continue
 
             # Initialize Prophet model
-            model = Prophet(yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False)    
+            model = Prophet(yearly_seasonality=False, weekly_seasonality=False, daily_seasonality=False)
             model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
             model.fit(df)
 
@@ -232,7 +231,7 @@ class SparkDataProcessAndForecast:
         for (retailer_id, product_id), model in models.items():
             future = model.make_future_dataframe(periods=days)
             forecast = model.predict(future)
-            
+
             forecast["retailer_id"] = retailer_id
             forecast["product_id"] = product_id
 
@@ -246,7 +245,7 @@ class SparkDataProcessAndForecast:
             predictions_spark_df.show(10)
         else:
             print("No predictions generated (no valid groups).")
-        
+
         return predictions_spark_df
 
     def fetch_data(self, start_date=None, end_date=None):
@@ -274,9 +273,8 @@ class SparkDataProcessAndForecast:
         # Additional transformations
         final_df = self.preprocessing(final_enriched_df)
 
-        
-
         return final_df
+
     def write_to_postgresql(self, dataframe, table_name='forecast', mode="overwrite"):
         """
         Write a Spark DataFrame to a PostgreSQL table.
@@ -299,13 +297,13 @@ class SparkDataProcessAndForecast:
             logger.error(f"Error writing DataFrame to PostgreSQL: {e}")
             raise
 
+
 def main():
     """
     Entry point for running the entire job.
     """
-    
-    pipeline = SparkDataProcessAndForecast(retries=5, delay=5)
 
+    pipeline = SparkDataProcessAndForecast(retries=5, delay=5)
 
     parsed_stream = pipeline.read_kafka_stream()
 
@@ -315,8 +313,8 @@ def main():
     enriched_stream = pipeline.enrich_data(parsed_stream, customer_data, product_data, retailer_data)
 
     # Write to memory + wait for job to finish
-    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream,start_date="2015-01-01", end_date="2015-01-10")
-
+    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream, start_date="2015-01-01",
+                                                           end_date="2015-01-10")
 
     # Additional transformations
     final_df = pipeline.preprocessing(final_enriched_df)
@@ -326,15 +324,14 @@ def main():
     result = result.withColumn("yhat", F.when(F.col("yhat") < 0, 0).otherwise(F.round(col("yhat")).cast(IntegerType())))
     result = result.withColumnRenamed("yhat", "item_quantity")
     if result.count() > 0:
-        result[['ds', 'product_id','retailer_id','item_quantity']].write.jdbc(
-                    url=pipeline.jdbc_url,
-                    table='forecast',
-                    mode='overwrite',
-                    properties=pipeline.jdbc_properties,
-                )
+        result[['ds', 'product_id', 'retailer_id', 'item_quantity']].write.jdbc(
+            url=pipeline.jdbc_url,
+            table='forecast',
+            mode='overwrite',
+            properties=pipeline.jdbc_properties,
+        )
     else:
         print("No data to write to the database.")
-
 
 
 if __name__ == "__main__":

@@ -91,5 +91,6 @@ def main():
 
     updated_inventory.execute_insert("postgres_inventory")
 
+
 if __name__ == '__main__':
     main()

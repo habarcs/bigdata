@@ -1,6 +1,6 @@
-import psycopg
-import plotly.express as px
 import pandas as pd
+import plotly.express as px
+import psycopg
 from flask import Flask, render_template, request, jsonify
 
 POSTGRES_CONNECTION = "host=sql-database dbname=postgres user=postgres password=supersecret port=5432"
@@ -22,7 +22,7 @@ def inventory():
                 retailers = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
                 cur.execute("SELECT product_id, product_name FROM products")
                 products = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
-                
+
                 cur.execute("""
                     SELECT 
                         r.retailer_name,
@@ -49,7 +49,8 @@ def inventory():
                         'status': row[3]
                     } for row in cur.fetchall()
                 ]
-            return render_template('inventory.html', retailers=retailers, products=products, inventory_data=inventory_data)
+            return render_template('inventory.html', retailers=retailers, products=products,
+                                   inventory_data=inventory_data)
 
     elif request.method == 'POST':
         filters = request.json
@@ -140,15 +141,14 @@ def forecasting():
 
         df = pd.DataFrame(data, columns=['ds', 'item_quantity'])
 
-        fig = px.line(df, x='ds', y='item_quantity', 
+        fig = px.line(df, x='ds', y='item_quantity',
                       title=f'Demand Forecast for Product <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
                       labels={'ds': 'Date', 'item_quantity': 'Predicted Demand'},
                       template='plotly_white')
         graph_html = fig.to_html(full_html=False)
 
         return render_template('forecasting.html', graph_html=graph_html, retailers=retailers, products=products)
-    
+
 
 if __name__ == '__main__':
     app.run(debug=True)
-
