@@ -49,4 +49,13 @@ CREATE TABLE data_gen
 (
     module  text PRIMARY KEY,
     created boolean
-)
+);
+
+CREATE TABLE historic_demand
+(
+    ds text NOT NULL,
+    product_id bigint references products NOT NULL,
+    retailer_id bigint references retailers NOT NULL,
+    item_quantity int,
+    PRIMARY KEY (ds, retailer_id, product_id)
+);

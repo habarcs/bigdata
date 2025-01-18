@@ -37,6 +37,14 @@ def main():
         .primary_key("product_id", "retailer_id") \
         .build()
 
+    postgres_historic_demand_schema = Schema.new_builder() \
+        .column("ds", DataTypes.STRING().not_null()) \
+        .column("product_id", DataTypes.BIGINT().not_null()) \
+        .column("retailer_id", DataTypes.BIGINT().not_null()) \
+        .column("item_quantity", DataTypes.INT()) \
+        .primary_key("product_id", "retailer_id", "ds") \
+        .build()
+
     # Create Kafka source table
     table_env.create_temporary_table(
         "kafka_orders",
@@ -48,7 +56,8 @@ def main():
         .option("properties.group.id", "flinventory")
         .option("scan.startup.mode", "group-offsets")
         .option('properties.auto.offset.reset', 'earliest')
-        .build())
+        .build()
+    )
 
     # Create Postgres sink table
     table_env.create_temporary_table(
@@ -60,37 +69,69 @@ def main():
         .option("username", "postgres")
         .option("password", "supersecret")
         .option("sink.buffer-flush.max-rows", "1")
-        .build())
+        .build()
+    )
+
+    # Create postgres table storing daily demand
+    table_env.create_temporary_table(
+        "postgres_historic_demand",
+        TableDescriptor.for_connector("jdbc")
+        .schema(postgres_historic_demand_schema)
+        .option("url", "jdbc:postgresql://sql-database:5432/postgres")
+        .option("table-name", 'historic_demand')
+        .option("username", "postgres")
+        .option("password", "supersecret")
+        .option("sink.buffer-flush.max-rows", "1")
+        .build()
+    )
 
     orders = table_env.from_path("kafka_orders").select(
+        col('product_id').alias("order_product_id"),
+        col('retailer_id').alias("order_retailer_id"),
+        col('item_quantity'),
+        col('order_id'),
+        col('order_date')
+    )
+    inventory = table_env.from_path("postgres_inventory").select(
+        col('product_id'),
+        col('retailer_id'),
+        col('quantity_on_hand'),
+        col('reorder_level')
+    )
+    historic_demand = table_env.from_path("postgres_historic_demand").select(
         col('product_id'),
         col('retailer_id'),
         col('item_quantity'),
-        col('order_id')
-    )
-    inventory = table_env.from_path("postgres_inventory").select(
-        col('product_id').alias("inventory_product_id"),
-        col('retailer_id').alias("inventory_retailer_id"),
-        col('quantity_on_hand'),
-        col('reorder_level')
+        col('ds')
     )
 
     updated_inventory = (
         orders.left_outer_join(inventory)
         .where(
-            (col('product_id') == col("inventory_product_id"))
-            & (col('retailer_id') == col("inventory_retailer_id"))
+            (col('order_product_id') == col("product_id"))
+            & (col('order_retailer_id') == col("retailer_id"))
         )
         .select(
-            col('inventory_product_id').alias("product_id"),
-            col('inventory_retailer_id').alias("retailer_id"),
+            col('product_id'),
+            col('retailer_id'),
             call("GREATEST", col('quantity_on_hand') - col('item_quantity'), 0).alias("quantity_on_hand"),
             col('reorder_level')
         )
     )
 
-    updated_inventory.execute_insert("postgres_inventory")
+    daily_sales = (
+        orders
+        .group_by(col("order_product_id"), col("order_retailer_id"), col("order_date"))
+        .select(
+            col("order_date").alias("ds"),
+            col("order_product_id").alias("product_id"),
+            col("order_retailer_id").alias("retailer_id"),
+            call("SUM", col("item_quantity")).alias("item_quantity")
+        )
+    )
 
+    daily_sales.execute_insert("postgres_historic_demand")
+    updated_inventory.execute_insert("postgres_inventory")
 
 if __name__ == '__main__':
     main()
