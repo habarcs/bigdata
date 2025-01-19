@@ -31,6 +31,19 @@
             </iframe>
         </div>
     </a>
+
+    <a href="{{ url_for('history') }}"
+       style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
+        <h2>Historical Demand</h2>
+        <p>Analyze historical demand for products.</p>
+        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
+            <iframe
+                    src="{{ url_for('history') }}"
+                    style="width: 100%; height: 100%; border: none; pointer-events: none;"
+                    title="Historical Demand Preview">
+            </iframe>
+        </div>
+    </a>
 </div>
 {% endblock %}
 

@@ -92,8 +92,7 @@ def inventory():
             return jsonify(data)
 
 
-@app.route('/forecasting', methods=['GET', 'POST'])
-def forecasting():
+def graphing(title, table, graph_title, graph_label):
     with psycopg.connect(POSTGRES_CONNECTION, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT retailer_id, retailer_name FROM retailers")
@@ -103,7 +102,8 @@ def forecasting():
             products = [{'id': row[0], 'name': row[1]} for row in cur.fetchall()]
 
     if request.method == 'GET':
-        return render_template('forecasting.html', retailers=retailers, products=products)
+        return render_template('graph.html', title=title, retailers=retailers,
+                               products=products)
 
     elif request.method == 'POST':
         retailer_id = request.form['retailer_id']
@@ -127,9 +127,9 @@ def forecasting():
                 product_row = cur.fetchone()
                 product_name = product_row[0] if product_row else None
 
-                cur.execute("""
+                cur.execute(f"""
                     SELECT ds, item_quantity
-                    FROM forecast
+                    FROM {table}
                     WHERE retailer_id = %s AND product_id = %s
                     ORDER BY ds
                 """, (retailer_id, product_id))
@@ -137,17 +137,37 @@ def forecasting():
 
         if not data:
             error = "There is no sufficient data to make a demand prediction."
-            return render_template('forecasting.html', retailers=retailers, products=products, error=error)
+            return render_template('graph.html', title=title,
+                                   retailers=retailers, products=products, error=error)
 
         df = pd.DataFrame(data, columns=['ds', 'item_quantity'])
 
         fig = px.line(df, x='ds', y='item_quantity',
-                      title=f'Demand Forecast for Product <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
-                      labels={'ds': 'Date', 'item_quantity': 'Predicted Demand'},
+                      title=f'{graph_title} <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
+                      labels={'ds': 'Date', 'item_quantity': graph_label},
                       template='plotly_white')
         graph_html = fig.to_html(full_html=False)
 
-        return render_template('forecasting.html', graph_html=graph_html, retailers=retailers, products=products)
+        return render_template('graph.html', title=title,
+                               graph_html=graph_html, retailers=retailers, products=products)
+
+
+@app.route('/forecasting', methods=['GET', 'POST'])
+def forecasting():
+    title = "Demand Forecasting"
+    database = "forecast"
+    graph_title = "Demand Forecast for Product"
+    graph_label = "Predicted Demand"
+    return graphing(title, database, graph_title, graph_label)
+
+
+@app.route('/history', methods=['GET', 'POST'])
+def history():
+    title = "Historical Demand"
+    database = "historic_demand"
+    graph_title = "Historical Demand for Product"
+    graph_label = "Historical Demand"
+    return graphing(title, database, graph_title, graph_label)
 
 
 if __name__ == '__main__':
