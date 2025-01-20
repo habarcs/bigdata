@@ -136,7 +136,7 @@ def graphing(title, table, graph_title, graph_label):
                 data = cur.fetchall()
 
         if not data:
-            error = "There is no sufficient data to make a demand prediction."
+            error = "There is no sufficient data."
             return render_template('graph.html', title=title,
                                    retailers=retailers, products=products, error=error)
 
@@ -146,7 +146,14 @@ def graphing(title, table, graph_title, graph_label):
         fig = px.line(df, x='ds', y='item_quantity',
                       title=f'{graph_title} <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
                       labels={'ds': 'Date', 'item_quantity': graph_label},
+                      color_discrete_sequence=['#2E9BFE'],
                       template='plotly_white')
+        fig.update_layout(
+                      title_font=dict(family="Futura, sans-serif"),
+                      xaxis_title_font=dict(family="Futura, sans-serif"),
+                      yaxis_title_font=dict(family="Futura, sans-serif"),
+                      font=dict(family="Futura, sans-serif"),
+                      hoverlabel=dict(font_family="Futura, sans-serif"))
         graph_html = fig.to_html(full_html=False)
 
         return render_template('graph.html', title=title,
