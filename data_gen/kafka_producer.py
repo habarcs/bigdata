@@ -40,9 +40,11 @@ def acked(err, msg):
 
 
 def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
-    df = df.assign(
-        order_date=pd.to_datetime(df['order date (DateOrders)'], format="%m/%d/%Y %H:%M", errors="coerce")
-    ).sort_values(by='order_date', ascending=True).drop(columns=['order_date']).reset_index(drop=True)
+    df['order date (DateOrders)'] = pd.to_datetime(df['order date (DateOrders)'],
+                                                   format='%m/%d/%Y %H:%M').dt.strftime('%Y/%m/%d %H:%M')
+    df['shipping date (DateOrders)'] = pd.to_datetime(df['shipping date (DateOrders)'],
+                                                      format='%m/%d/%Y %H:%M').dt.strftime('%Y/%m/%d %H:%M')
+    df = df.sort_values(by='order date (DateOrders)', ascending=True).reset_index(drop=True)
 
     orders = df[["Type",
                  "Days for shipping (real)",
@@ -102,9 +104,9 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 
 def get_unix_daystamp(date: str) -> int:
-    reference_date_str = "1/1/1970"
-    date_obj = datetime.strptime(date, "%m/%d/%Y %H:%M")
-    reference_date = datetime.strptime(reference_date_str, "%m/%d/%Y")
+    reference_date_str = "1970/1/1"
+    date_obj = datetime.strptime(date, "%Y/%m/%d %H:%M")
+    reference_date = datetime.strptime(reference_date_str, "%Y/%m/%d")
     days = (date_obj - reference_date).days
     return days
 
