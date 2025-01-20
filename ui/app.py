@@ -141,6 +141,7 @@ def graphing(title, table, graph_title, graph_label):
                                    retailers=retailers, products=products, error=error)
 
         df = pd.DataFrame(data, columns=['ds', 'item_quantity'])
+        df['ds'] = pd.to_datetime(df['ds'])
 
         fig = px.line(df, x='ds', y='item_quantity',
                       title=f'{graph_title} <b>{product_name}</b> at Retailer <b>{retailer_name}</b>',
