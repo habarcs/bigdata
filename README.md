@@ -1,49 +1,38 @@
-# bigdata
+# Demand Prediction for Supply Chain Management
+The program provides an end-to-end solution for processing and analyzing order data with inventory management and demand fluctuation capabilities.
+It is able to handle multiple retailers and products, handles the data of customers and processes and manages orders in a scalable manner.
 
-Big data project for UNITN
+## Implementation details
+For more information about the specific components and their workings check the paper:
+TODO add the link for the paper
 
-Supplier, manufacturer, etc... sending data to central system. With this data we do predictions and dashboard.
+## Requirements
+- docker 
+- docker compose
 
-Decide on format of data: tabular data, relational data. It is going to be synthetic data based on real data sets. This
-way we decide what variables could be used.
-
-The simpler the project the better. In Martons head:
-
-Entities send data with a msg queue system to a central data warehouse.
-Then processing stuff that runs in dask.
-Frontend system with dashboard.
-
-Technologies we used:
-
-Overall Architecture Diagram
-Data Sources →
-Data Ingestion (API Clients, Kafka, Pub/Sub) →
-Data Preparation (Knime, PySpark) →
-Data Storage (HDFS, Data Warehouse, Data Lake, NoSQL) →
-Data Processing (Dask, PySpark, Spark Streaming) →
-Data Retrieval (SQL, MongoDB, SPARQL) →
-Deployment (Docker, Kubernetes) →
-Analytics (Predictive Models, Visualization Tools)
-
-##### Problem statement
-
-We are a company that provides predictive insights to suppliers by forecasting the optimal quantity of raw materials
-they should produce. Our solution leverages data from intermediate manufacturing processes and retail performance to
-deliver precise, data-driven recommendations, helping suppliers align their production plans with actual market demand,
-minimize waste, and optimize inventory management.
-
-### How to use
-
-start docker containers
+## Run
+To start the application all the user has to do is build the containers and run them in docker compose, the following command does both:
 
 ```bash
 docker compose up -d --build
 ```
 
-to connect to psql and interact with postgresql (the name of the container may be different)
+To connect to psql and interact with postgresql (the name of the container may be different):
 
 ```bash
 docker exec -it best_big_data_project-sql-database-1 psql -U postgres
 ```
 
+To connect to kafka and interact with the message queues (the name of the container may be different):
+```bash
+docker exec -it best_big_data_project-kafka-1 bash
+```
+The relevant programs are found in the /opt/kafka/bin/ directory
+For example to list the messages in the order topic the user should run the following command:
+```bash
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders
+```
 
+## Use of the graphical user interface
+The Main window is available on localhost:5000 after the setup has finished
+Here the user is able to check the inventory for each retailer and look for historical and predicted future daily demands.
