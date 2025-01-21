@@ -37,12 +37,16 @@ def main():
         .primary_key("product_id", "retailer_id") \
         .build()
 
-    postgres_historic_demand_schema = Schema.new_builder() \
+    postgres_daily_aggregates_schema = Schema.new_builder() \
         .column("ds", DataTypes.STRING().not_null()) \
         .column("product_id", DataTypes.BIGINT().not_null()) \
         .column("retailer_id", DataTypes.BIGINT().not_null()) \
-        .column("item_quantity", DataTypes.INT()) \
-        .primary_key("product_id", "retailer_id", "ds") \
+        .column("order_status", DataTypes.STRING().not_null()) \
+        .column("total_item_quantity", DataTypes.INT()) \
+        .column("avg_real_shipping_days", DataTypes.DOUBLE()) \
+        .column("avg_scheduled_shipping_days", DataTypes.DOUBLE()) \
+        .column("avg_late_risk", DataTypes.DOUBLE()) \
+        .primary_key("product_id", "retailer_id", "ds", "order_status") \
         .build()
 
     # Create Kafka source table
@@ -74,11 +78,11 @@ def main():
 
     # Create postgres table storing daily demand
     table_env.create_temporary_table(
-        "postgres_historic_demand",
+        "postgres_daily_aggregates",
         TableDescriptor.for_connector("jdbc")
-        .schema(postgres_historic_demand_schema)
+        .schema(postgres_daily_aggregates_schema)
         .option("url", "jdbc:postgresql://sql-database:5432/postgres")
-        .option("table-name", 'historic_demand')
+        .option("table-name", 'daily_aggregates')
         .option("username", "postgres")
         .option("password", "supersecret")
         .option("sink.buffer-flush.max-rows", "1")
@@ -89,7 +93,10 @@ def main():
         col('product_id').alias("order_product_id"),
         col('retailer_id').alias("order_retailer_id"),
         col('item_quantity'),
-        col('order_id'),
+        col('status'),
+        col("real_shipping_days"),
+        col("scheduled_shipping_days"),
+        col("late_risk"),
         call("SUBSTRING", col('order_date'), 0, 10).alias("order_date")
     )
     inventory = table_env.from_path("postgres_inventory").select(
@@ -113,18 +120,22 @@ def main():
         )
     )
 
-    daily_sales = (
+    daily_aggregates = (
         orders
-        .group_by(col("order_product_id"), col("order_retailer_id"), col("order_date"))
+        .group_by(col("order_product_id"), col("order_retailer_id"), col("order_date"), col("status"))
         .select(
             col("order_date").alias("ds"),
             col("order_product_id").alias("product_id"),
             col("order_retailer_id").alias("retailer_id"),
-            call("SUM", col("item_quantity")).alias("item_quantity")
+            col("status").alias("order_status"),
+            call("SUM", col("item_quantity")).alias("total_item_quantity"),
+            call("AVG", col("real_shipping_days")).alias("avg_real_shipping_days"),
+            call("AVG", col("scheduled_shipping_days")).alias("avg_scheduled_shipping_days"),
+            call("AVG", col("late_risk")).alias("avg_late_risk")
         )
     )
 
-    daily_sales.execute_insert("postgres_historic_demand")
+    daily_aggregates.execute_insert("postgres_daily_aggregates")
     updated_inventory.execute_insert("postgres_inventory")
 
 
