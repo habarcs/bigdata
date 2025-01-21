@@ -2,8 +2,14 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import requests  # For making HTTP requests to the Flask API
+
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
+
+
 from db_util import load_static_data
-from utils import get_forecast_results, process_orders
+from primary import get_forecast_results, process_orders
 from datetime import datetime
 
 # Page configuration

@@ -5,6 +5,10 @@ import plotly.express as px
 import streamlit as st
 from kafka import KafkaConsumer
 import json
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
+
 from db_util import get_engine
 
 # Streamlit configuration
@@ -17,7 +21,7 @@ st.set_page_config(
 # Kafka Consumer setup
 consumer = KafkaConsumer(
     'orders',
-    bootstrap_servers=['localhost:9092'],
+    bootstrap_servers=['kafka:9092'],
     auto_offset_reset='latest',
     enable_auto_commit=True,
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))

@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-DATABASE_URL = "postgresql+psycopg2://postgres:supersecret@localhost:5432/postgres"
+DATABASE_URL = "postgresql+psycopg2://postgres:supersecret@sql-database:5432/postgres"
 
 def get_engine():
     """

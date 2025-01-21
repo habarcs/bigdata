@@ -136,5 +136,5 @@ def event_generation_loop(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
     for order in order_generator(df, engine):
         send_event(producer, order)
-        time.sleep(0.1)
+        time.sleep(1)
     producer.flush()

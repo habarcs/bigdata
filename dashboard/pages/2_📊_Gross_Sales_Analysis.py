@@ -1,8 +1,14 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
+
+
 from db_util import load_static_data
-from utils import process_orders
+import process_orders
 
 # Page configuration
 st.set_page_config(page_title="Gross Sales Analysis", page_icon="📊", layout="wide")

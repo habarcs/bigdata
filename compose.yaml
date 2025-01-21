@@ -85,13 +85,6 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
 
-  flask-ui:
-    build: ui
-    depends_on:
-      data-gen:
-        condition: service_healthy
-    ports:
-      - "5000:5000"
 
   spark:
     build:
@@ -113,3 +106,19 @@ services:
       - PYSPARK_PYTHON=python3
 
 
+  dashboard:
+    build:
+      context: ./dashboard 
+      dockerfile: Dockerfile  
+    ports:
+      - "8501:8501"  
+    depends_on:
+      data-gen:
+        condition: service_healthy
+      sql-database:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_DATABASE_URL=postgresql://postgres:supersecret@sql-database:5432/postgres

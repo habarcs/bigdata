@@ -1,5 +1,4 @@
 streamlit
-streamz
 pandas
 matplotlib
 kafka-python

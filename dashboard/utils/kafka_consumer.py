@@ -3,7 +3,7 @@ from kafka import KafkaConsumer
 import json
 import time
 
-KAFKA_BOOTSTRAP_SERVER = "localhost:9092"
+KAFKA_BOOTSTRAP_SERVER = "kafka:9092"
 KAFKA_TOPIC = "orders"
 
 def consume_kafka_data():

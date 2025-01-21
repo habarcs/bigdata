@@ -1,7 +1,7 @@
 import streamlit as st
-from kafka_consumer import consume_kafka_data
-from db_util import load_static_data
-from utils import process_orders, find_new_products
+from utils.kafka_consumer import consume_kafka_data
+from utils.db_util import load_static_data
+from utils.primary import process_orders, find_new_products
 import pandas as pd
 import numpy as np
 import time
