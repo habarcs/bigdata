@@ -90,19 +90,13 @@ def main():
         col('retailer_id').alias("order_retailer_id"),
         col('item_quantity'),
         col('order_id'),
-        col('order_date')
+        call("SUBSTRING", col('order_date'), 0, 10).alias("order_date")
     )
     inventory = table_env.from_path("postgres_inventory").select(
         col('product_id'),
         col('retailer_id'),
         col('quantity_on_hand'),
         col('reorder_level')
-    )
-    historic_demand = table_env.from_path("postgres_historic_demand").select(
-        col('product_id'),
-        col('retailer_id'),
-        col('item_quantity'),
-        col('ds')
     )
 
     updated_inventory = (
@@ -132,6 +126,7 @@ def main():
 
     daily_sales.execute_insert("postgres_historic_demand")
     updated_inventory.execute_insert("postgres_inventory")
+
 
 if __name__ == '__main__':
     main()

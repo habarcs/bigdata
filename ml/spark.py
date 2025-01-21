@@ -134,7 +134,7 @@ class SparkDataProcessAndForecast:
             parsed_stream.join(customer_data, "customer_id", "left")
             .join(product_data, "product_id", "left")
             .join(retailer_data, "retailer_id", "left")
-            .withColumn("order_timestamp", to_timestamp(col("order_date"), "MM/dd/yyyy HH:mm"))
+            .withColumn("order_timestamp", to_timestamp(col("order_date"), "yyyy/MM/dd HH:mm"))
             .withColumn(
                 "shipping_delay", col("real_shipping_days") - col("scheduled_shipping_days")
             )
@@ -185,9 +185,9 @@ class SparkDataProcessAndForecast:
         logger.info("Starting the preprocessing...")
 
         df_transformed = df.withColumn(
-            "order_date", to_timestamp(col("order_date"), "MM/dd/yyyy HH:mm")
+            "order_date", to_timestamp(col("order_date"), "yyyy/MM/dd HH:mm")
         ).withColumn(
-            "shipping_data", to_timestamp(col("shipping_data"), "MM/dd/yyyy HH:mm")
+            "shipping_data", to_timestamp(col("shipping_data"), "yyyy/MM/dd HH:mm")
         ).withColumn(
             "shipping_duration_hours",
             floor((unix_timestamp(col("shipping_data")) - unix_timestamp(col("order_date"))) / 3600)

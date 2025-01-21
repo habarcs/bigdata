@@ -4,22 +4,26 @@
 
 {% block content %}
 
-<form id="inventory-search-form">
-    <label for="retailers">Select Retailers:</label>
-    <select id="retailers" multiple="multiple" name="retailers" style="width: 300px;">
-        {% for retailer in retailers %}
-        <option value="{{ retailer.id }}">{{ retailer.name }}</option>
-        {% endfor %}
-    </select>
+<form id="inventory-search-form" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 20px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="retailers">Select Retailers:</label>
+        <select id="retailers" multiple="multiple" name="retailers" style="width: 300px;">
+            {% for retailer in retailers %}
+            <option value="{{ retailer.id }}">{{ retailer.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
-    <label for="products">Select Products:</label>
-    <select id="products" multiple="multiple" name="products" style="width: 300px;">
-        {% for product in products %}
-        <option value="{{ product.id }}">{{ product.name }}</option>
-        {% endfor %}
-    </select>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="products">Select Products:</label>
+        <select id="products" multiple="multiple" name="products" style="width: 300px;">
+            {% for product in products %}
+            <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
 
-    <button type="submit">Search</button>
+    <button type="submit" class="search-btn">Search</button>
 </form>
 
 <table border="1" id="inventory-table" style="margin-top: 20px; width: 100%; border-collapse: collapse;">

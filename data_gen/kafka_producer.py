@@ -12,6 +12,7 @@ from data_gen import KAFKA_CONF
 
 
 def create_kafka_topics():
+    """Creates the kafka topic for the orders, if it is already created does nothing"""
     admin_client = AdminClient(KAFKA_CONF)
     new_topics = [
         NewTopic("orders")
@@ -33,6 +34,7 @@ def create_kafka_topics():
 
 
 def acked(err, msg):
+    """helper callback function indicating if a message has been successfully sent by kafka"""
     if err is not None:
         print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
     else:
@@ -40,9 +42,12 @@ def acked(err, msg):
 
 
 def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
-    df = df.assign(
-        order_date=pd.to_datetime(df['order date (DateOrders)'], format="%m/%d/%Y %H:%M", errors="coerce")
-    ).sort_values(by='order_date', ascending=True).drop(columns=['order_date']).reset_index(drop=True)
+    """Takes the original dataset and for each line generates a kafka order"""
+    df['order date (DateOrders)'] = pd.to_datetime(df['order date (DateOrders)'],
+                                                   format='%m/%d/%Y %H:%M').dt.strftime('%Y/%m/%d %H:%M')
+    df['shipping date (DateOrders)'] = pd.to_datetime(df['shipping date (DateOrders)'],
+                                                      format='%m/%d/%Y %H:%M').dt.strftime('%Y/%m/%d %H:%M')
+    df = df.sort_values(by='order date (DateOrders)', ascending=True).reset_index(drop=True)
 
     orders = df[["Type",
                  "Days for shipping (real)",
@@ -102,20 +107,24 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 
 def get_unix_daystamp(date: str) -> int:
-    reference_date_str = "1/1/1970"
-    date_obj = datetime.strptime(date, "%m/%d/%Y %H:%M")
-    reference_date = datetime.strptime(reference_date_str, "%m/%d/%Y")
+    """converts a date to a unix timestamp like number, which tells the number of days passed since
+    1970/1/1 to the date specified"""
+    reference_date_str = "1970/1/1"
+    date_obj = datetime.strptime(date, "%Y/%m/%d %H:%M")
+    reference_date = datetime.strptime(reference_date_str, "%Y/%m/%d")
     days = (date_obj - reference_date).days
     return days
 
 
 def send_event(producer: Producer, order: dict):
+    """Sends and event to kafka"""
     key = str(get_unix_daystamp(order.get("order_date")))
     producer.poll(0)
     producer.produce("orders", key=key, value=json.dumps(order), callback=acked)
 
 
 def event_generation_loop(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    """Loop doing the order generation, handles terminating signal from docker"""
     producer = Producer(KAFKA_CONF)
 
     def signal_handler(_, __):

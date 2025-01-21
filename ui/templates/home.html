@@ -3,48 +3,27 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-
-</div>
-<div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; padding: 20px;">
+<h1 style="text-align: center;">Welcome to the Inventory Management System</h1>
+<div class="block-container" style="display: flex; gap: 20px; justify-content: space-between; padding: 40px;">
     <a href="{{ url_for('inventory') }}"
-       style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
-        <h2>Inventory Management</h2>
-        <p>Monitor stock levels, reorder items, and ensure product availability.</p>
-        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
-            <iframe
-                    src="{{ url_for('inventory') }}"
-                    style="width: 100%; height: 100%; border: none; pointer-events: none;"
-                    title="Inventory Preview">
-            </iframe>
-        </div>
+       style="flex: 1; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: flex; flex-direction: column; align-items: center;">
+        <img src="https://img.icons8.com/?size=100&id=ObgwZHCsUW8b&format=png&color=000000" alt="Inventory Icon" style="width: 100px; height: 100px; margin-bottom: 10px;">
+        <h2 style="color: #E02F24;">Inventory Management</h2>
+        <p style="text-align: center;">Monitor stock and ensure product availability.</p>
     </a>
 
     <a href="{{ url_for('forecasting') }}"
-       style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
-        <h2>Demand Forecasting</h2>
-        <p>Analyze trends and predict future demand for your products.</p>
-        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
-            <iframe
-                    src="{{ url_for('forecasting') }}"
-                    style="width: 100%; height: 100%; border: none; pointer-events: none;"
-                    title="Forecasting Preview">
-            </iframe>
-        </div>
+       style="flex: 1; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: flex; flex-direction: column; align-items: center;">
+        <img src="https://img.icons8.com/?size=100&id=9ySRNvsujU7I&format=png&color=000000" alt="Forecasting Icon" style="width: 100px; height: 100px; margin-bottom: 10px;">
+        <h2 style="color: #10E36C;">Demand Forecasting</h2>
+        <p style="text-align: center;">Predict future demand for your products.</p>
     </a>
 
     <a href="{{ url_for('history') }}"
-       style="flex: 1 1 45%; min-width: 300px; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: block;">
-        <h2>Historical Demand</h2>
-        <p>Analyze historical demand for products.</p>
-        <div style="border: 1px solid #ccc; margin-top: 10px; overflow: hidden; height: 350px;">
-            <iframe
-                    src="{{ url_for('history') }}"
-                    style="width: 100%; height: 100%; border: none; pointer-events: none;"
-                    title="Historical Demand Preview">
-            </iframe>
-        </div>
+       style="flex: 1; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: flex; flex-direction: column; align-items: center;">
+        <img src="https://img.icons8.com/?size=100&id=2b2uoNtSfLPD&format=png&color=000000" alt="Historical Demand Icon" style="width: 100px; height: 100px; margin-bottom: 10px;">
+        <h2 style="color: #2E9BFE;">Historical Demand</h2>
+        <p style="text-align: center;">Analyze historical demand for your products.</p>
     </a>
 </div>
 {% endblock %}
-
-

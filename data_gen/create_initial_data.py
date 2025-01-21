@@ -7,6 +7,13 @@ import sqlalchemy
 
 
 def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    """
+    creates the products in the database
+    only runs once
+    :param df: the original dataset
+    :param engine: postgres engine
+    :return:
+    """
     if data_already_created(engine, "products"):
         return
     products = df.drop_duplicates(subset="Product Card Id", keep="first")[[
@@ -28,6 +35,13 @@ def create_products(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 
 def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    """
+    creates the retailers in the database
+    only runs once
+    :param df: the original dataset
+    :param engine: postgres engine
+    :return:
+    """
     if data_already_created(engine, "retailers"):
         return
     fake = faker.Faker()
@@ -50,6 +64,14 @@ def create_retailers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 
 def create_inventory(_, engine: sqlalchemy.engine.Engine):
+    """
+    creates the inventory in the database based on the retailers and products
+    the quantity and reorder level is set randomly
+    only runs once
+    :param df: the original dataset
+    :param engine: postgres engine
+    :return:
+    """
     if data_already_created(engine, "inventory"):
         return
     with engine.connect() as conn:
@@ -72,6 +94,12 @@ def create_inventory(_, engine: sqlalchemy.engine.Engine):
 
 
 def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    """
+    Creates locations in the database, runs only once
+    :param df: the original dataset
+    :param engine: postgres engine
+    :return:
+    """
     if data_already_created(engine, "locations"):
         return
     # map the Customer Region from Customer State (as it was not given)
@@ -117,6 +145,12 @@ def create_locations(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
 
 
 def create_customers(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
+    """
+    creates information about the customers referencing the location table, runs only once
+    :param df: the original dataset
+    :param engine: postgres engine
+    :return:
+    """
     if data_already_created(engine, "customers"):
         return
     customers = df.drop_duplicates(subset=["Customer Id"], keep="last")[[
@@ -201,12 +235,14 @@ def get_or_create_location(row, connection):
 
 
 def clean_zipcode(zipcode):
+    """some zipcodes are missing from the data, in that case in changes the null value to an empty string"""
     if pd.isna(zipcode):
         return ''
     return str(int(zipcode))
 
 
 def data_already_created(engine: sqlalchemy.engine.Engine, creator: str) -> bool:
+    """checks the database if the specific data creator has already been run, if so returns True"""
     with engine.connect() as conn:
         created = conn.execute(sqlalchemy.text('SELECT created FROM data_gen WHERE module LIKE :creator'),
                                {"creator": creator}).fetchall()
@@ -216,6 +252,7 @@ def data_already_created(engine: sqlalchemy.engine.Engine, creator: str) -> bool
 
 
 def set_data_created(engine: sqlalchemy.engine.Engine, creator: str, value: bool = True):
+    """Sets the database to indicate that a creator has been run, and shouldn't be run again"""
     with engine.connect() as conn:
         res = conn.execute(sqlalchemy.text('INSERT into data_gen (module, created) '
                                            'VALUES (:creator, :value) '

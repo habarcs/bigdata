@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="container">
-    <form class="form-inline" method="POST">
-        <div class="form-group mb-2">
+    <form class="form-inline d-flex justify-content-center align-items-center" method="POST" style="gap: 20px;">
+        <div class="d-flex align-items-center" style="gap: 10px;">
             <label class="mr-2" for="retailer_id">Select Retailer:</label>
             <select class="form-control select2" id="retailer_id" name="retailer_id" required>
                 <option value="">-- Select Retailer --</option>
@@ -15,7 +15,7 @@
             </select>
         </div>
 
-        <div class="form-group mb-2 mx-3">
+        <div class="d-flex align-items-center" style="gap: 10px;">
             <label class="mr-2" for="product_id">Select Product:</label>
             <select class="form-control select2" id="product_id" name="product_id" required>
                 <option value="">-- Select Product --</option>
@@ -25,7 +25,7 @@
             </select>
         </div>
 
-        <button class="btn btn-primary mb-2" type="submit">Submit</button>
+        <button class="search-btn" type="submit">Submit</button>
     </form>
 
     {% if graph_html %}
@@ -37,9 +37,9 @@
     {% endif %}
 
     {% if error %}
-    <div class="alert alert-danger mt-4">
+    <div class="alert alert-danger mt-4 text-center">
         <strong>Error:</strong> {{ error }}
-    </div>
+    </div>    
     {% endif %}
 </div>
 
@@ -57,14 +57,29 @@
         padding: 6px 12px;
     }
 
-    .form-inline .form-group {
-        display: inline-block;
-        margin-right: 15px;
+    .form-inline {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .align-items-center {
+        align-items: center;
     }
 
     .form-inline button {
         margin-top: 0;
     }
+
+    .alert-danger {
+    text-align: center;
+    justify-content: center;
+}
 </style>
 
 <script>
