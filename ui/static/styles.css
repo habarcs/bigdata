@@ -76,3 +76,8 @@ footer a {
 footer a:hover {
     text-decoration: underline;
 }
+
+div.block-container a:hover {
+    background-color: lightgrey;
+    transition: background-color 0.3s; 
+}

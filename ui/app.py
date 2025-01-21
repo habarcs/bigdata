@@ -149,11 +149,9 @@ def graphing(title, table, graph_title, graph_label):
                       color_discrete_sequence=['#2E9BFE'],
                       template='plotly_white')
         fig.update_layout(
-                      title_font=dict(family="Futura, sans-serif"),
-                      xaxis_title_font=dict(family="Futura, sans-serif"),
-                      yaxis_title_font=dict(family="Futura, sans-serif"),
+                      title=dict(x=0.5, xanchor='center', font=dict(family="Futura, sans-serif")),
                       font=dict(family="Futura, sans-serif"),
-                      hoverlabel=dict(font_family="Futura, sans-serif"))
+                      hoverlabel=dict(font_family="Futura, sans-serif", font_color="white"))
         graph_html = fig.to_html(full_html=False)
 
         return render_template('graph.html', title=title,

@@ -4,12 +4,12 @@
 
 {% block content %}
 <h1 style="text-align: center;">Welcome to the Inventory Management System</h1>
-<div style="display: flex; gap: 20px; justify-content: space-between; padding: 20px;">
+<div class="block-container" style="display: flex; gap: 20px; justify-content: space-between; padding: 40px;">
     <a href="{{ url_for('inventory') }}"
        style="flex: 1; text-decoration: none; color: inherit; border: 1px solid #ddd; padding: 10px; border-radius: 5px; display: flex; flex-direction: column; align-items: center;">
         <img src="https://img.icons8.com/?size=100&id=ObgwZHCsUW8b&format=png&color=000000" alt="Inventory Icon" style="width: 100px; height: 100px; margin-bottom: 10px;">
         <h2 style="color: #E02F24;">Inventory Management</h2>
-        <p style="text-align: center;">Monitor stock levels, reorder items, and ensure product availability.</p>
+        <p style="text-align: center;">Monitor stock and ensure product availability.</p>
     </a>
 
     <a href="{{ url_for('forecasting') }}"
