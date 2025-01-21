@@ -51,11 +51,15 @@ CREATE TABLE data_gen
     created boolean
 );
 
-CREATE TABLE historic_demand
+CREATE TABLE daily_aggregates
 (
-    ds text NOT NULL,
-    product_id bigint references products NOT NULL,
-    retailer_id bigint references retailers NOT NULL,
-    item_quantity int,
-    PRIMARY KEY (ds, retailer_id, product_id)
+    ds                          text                        NOT NULL,
+    product_id                  bigint references products  NOT NULL,
+    retailer_id                 bigint references retailers NOT NULL,
+    order_status                text                        NOT NULL,
+    avg_real_shipping_days      double precision,
+    avg_scheduled_shipping_days double precision,
+    avg_late_risk               double precision,
+    total_item_quantity         int,
+    PRIMARY KEY (ds, retailer_id, product_id, order_status)
 );
