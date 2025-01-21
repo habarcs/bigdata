@@ -1,0 +1,8 @@
+streamlit
+streamz
+pandas
+matplotlib
+kafka-python
+sqlalchemy
+psycopg2-binary
+plotly

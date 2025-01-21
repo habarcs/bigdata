@@ -105,10 +105,7 @@ services:
       sql-database:
         condition: service_healthy
     command: >
-      spark-submit
-      --jars /opt/bitnami/spark/jars/postgresql-42.7.4.jar
-      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.4
-      /app/spark.py
+      python /app/spark_api.py  
     ports:
       - "4040:4040"
     environment:

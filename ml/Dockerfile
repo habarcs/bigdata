@@ -1,13 +1,13 @@
-# spark/Dockerfile
+# Use the Bitnami Spark base image
 FROM bitnami/spark:3.3.4
 
+# Switch to root user
 USER root
 
 # Install Python 3.8 manually without using add-apt-repository
 RUN apt-get update && apt-get install -y \
     wget \
     build-essential \
-    cron \
     zlib1g-dev \
     libffi-dev \
     libssl-dev \
@@ -23,25 +23,19 @@ RUN apt-get update && apt-get install -y \
     ln -sf /usr/local/bin/python3.8 /usr/bin/python && \
     ln -sf /usr/local/bin/pip3.8 /usr/bin/pip
 
-# Install PySpark
-RUN pip install --no-cache-dir pyspark==3.3.4
-
-# Copy Postgres JDBC driver to the Spark jars directory
-COPY postgresql-42.7.4.jar /opt/bitnami/spark/jars/postgresql-42.7.4.jar
-
-# Copy requirements.txt
+# Install Python dependencies from requirements.txt
 COPY requirements.txt /opt/requirements.txt
-
-# Install Python packages from requirements.txt
 RUN pip install --no-cache-dir -r /opt/requirements.txt
 
-# Copy PySpark script into /app
+# Copy the PostgreSQL JDBC driver to the Spark jars directory
+COPY postgresql-42.7.4.jar /opt/bitnami/spark/jars/postgresql-42.7.4.jar
+
+# Copy the application scripts
+COPY spark_api.py /app/spark_api.py
 COPY spark.py /app/spark.py
 
-# Add the cron job
-RUN echo "*/5 * * * * /usr/bin/spark-submit --jars /opt/spark/jars/postgresql-42.7.4.jar --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.4 /app/spark.py > /var/log/spark-job.log 2>&1" > /etc/cron.d/spark-cron && \
-    chmod 0644 /etc/cron.d/spark-cron && \
-    crontab /etc/cron.d/spark-cron
+# Expose the Flask API port
+EXPOSE 4040
 
-# Ensure cron runs in the foreground
-CMD ["cron", "-f"]
+# Set the default command to run the Flask API
+CMD ["python", "/app/spark_api.py"]

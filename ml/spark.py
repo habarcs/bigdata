@@ -1,6 +1,6 @@
 import time
 import warnings
-
+import os
 warnings.filterwarnings("ignore")
 import logging
 
@@ -143,10 +143,10 @@ class SparkDataProcessAndForecast:
 
         return enriched_stream
 
-    def wait_for_data_and_collect(self, enriched_stream, start_date=None, end_date=None):
+    def wait_for_data_and_collect(self, enriched_stream, start_date=None, end_date=None, product_ids=None, retailer_ids=None):
         """
         Write enriched stream data to an in-memory table, wait until it finishes,
-        then return the final Spark DataFrame.
+        then return the final Spark DataFrame with optional filtering by product_ids and retailer_ids.
         """
         self.spark.sql("DROP TABLE IF EXISTS enriched_data")
 
@@ -159,14 +159,24 @@ class SparkDataProcessAndForecast:
 
         # Wait until all data has been processed
         memory_query.awaitTermination()
-        final_enriched_df = None
+        final_enriched_df = self.spark.sql("SELECT * FROM enriched_data")
+
+        # Apply date filtering if provided
         if start_date and end_date:
-            final_enriched_df = self.spark.sql(
-                f"SELECT * FROM enriched_data WHERE order_timestamp >= '{start_date}' AND order_timestamp <= '{end_date}'")
-        else:
-            # Read data from in-memory table
-            final_enriched_df = self.spark.sql("SELECT * FROM enriched_data")
+            final_enriched_df = final_enriched_df.filter(
+                (col("order_timestamp") >= start_date) & (col("order_timestamp") <= end_date)
+            )
+
+        # Apply product_ids filtering if provided
+        if product_ids and isinstance(product_ids, list):
+            final_enriched_df = final_enriched_df.filter(col("product_id").isin(product_ids))
+
+        # Apply retailer_ids filtering if provided
+        if retailer_ids and isinstance(retailer_ids, list):
+            final_enriched_df = final_enriched_df.filter(col("retailer_id").isin(retailer_ids))
+
         return final_enriched_df
+
 
     def preprocessing(self, df):
         """
@@ -204,7 +214,7 @@ class SparkDataProcessAndForecast:
     def prophet_forecast(self, final_df_pandas, days=7):
         """
         Train Prophet models for each retailer_id/product_id combination
-        and generate predictions.
+        and generate predictions for future dates only.
         """
 
         # Train Prophet models
@@ -212,8 +222,8 @@ class SparkDataProcessAndForecast:
         retailer_product_groups = final_df_pandas.groupby(["retailer_id", "product_id"])
 
         for (retailer_id, product_id), group in retailer_product_groups:
-            df = group[["ds", "y"]]  # If you need regressors, add them here
-            df = df.dropna().sort_values("ds")
+            df = group[["ds", "y"]]  # Use only the required columns
+            df = df.dropna().sort_values("ds")  # Ensure data is sorted by date
 
             if df.shape[0] < 2:
                 print(f"Skipping retailer_id: {retailer_id}, product_id: {product_id} (insufficient data).")
@@ -226,27 +236,36 @@ class SparkDataProcessAndForecast:
 
             models[(retailer_id, product_id)] = model
 
-        #  Make predictions
+        # Generate predictions for future dates only
         future_predictions = []
         for (retailer_id, product_id), model in models.items():
+            # Generate future dates
             future = model.make_future_dataframe(periods=days)
+            
+            # Filter for future dates only
+            last_date = model.history["ds"].max()  # Last date in the historical data
+            future = future[future["ds"] > last_date]
+
+            # Make predictions
             forecast = model.predict(future)
 
+            # Add metadata
             forecast["retailer_id"] = retailer_id
             forecast["product_id"] = product_id
 
             future_predictions.append(forecast)
+
         predictions_spark_df = None
         # Combine all predictions into a single DataFrame
         if future_predictions:
             predictions_df = pd.concat(future_predictions, ignore_index=True)
             predictions_spark_df = self.spark.createDataFrame(predictions_df.astype(str))
-            # Show predictions (or save them)
-            predictions_spark_df.show(10)
+            predictions_spark_df.show(10)  # Show a sample of the predictions
         else:
             print("No predictions generated (no valid groups).")
 
         return predictions_spark_df
+
 
     def fetch_data(self, start_date=None, end_date=None):
         """
@@ -302,7 +321,18 @@ def main():
     """
     Entry point for running the entire job.
     """
+    product_id = os.getenv("PRODUCT_ID")
+    retailer_id = os.getenv("RETAILER_ID")
 
+    if product_id:
+        product_id = [int(pid) for pid in product_id.split(",")]  # Convert to list of integers
+
+    if retailer_id:
+        retailer_id = [int(rid) for rid in retailer_id.split(",")]  # Convert to list of integers
+
+    start_date = os.getenv("START_DATE")
+    end_date = os.getenv("END_DATE")
+    forecast_duration = int(os.getenv("FORECAST_DURATION", 30))
     pipeline = SparkDataProcessAndForecast(retries=5, delay=5)
 
     parsed_stream = pipeline.read_kafka_stream()
@@ -313,13 +343,13 @@ def main():
     enriched_stream = pipeline.enrich_data(parsed_stream, customer_data, product_data, retailer_data)
 
     # Write to memory + wait for job to finish
-    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream, start_date="2015-01-01",
-                                                           end_date="2015-01-10")
+    final_enriched_df = pipeline.wait_for_data_and_collect(enriched_stream, start_date,
+                                                           end_date, product_id, retailer_id)
 
     # Additional transformations
     final_df = pipeline.preprocessing(final_enriched_df)
 
-    result = pipeline.prophet_forecast(final_df)
+    result = pipeline.prophet_forecast(final_df, forecast_duration)
     # Round the yhat result to integer and rename it to item_quantity
     result = result.withColumn("yhat", F.when(F.col("yhat") < 0, 0).otherwise(F.round(col("yhat")).cast(IntegerType())))
     result = result.withColumnRenamed("yhat", "item_quantity")
