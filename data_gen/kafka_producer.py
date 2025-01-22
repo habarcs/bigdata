@@ -41,8 +41,29 @@ def acked(err, msg):
         print("Message produced: %s" % (str(msg)))
 
 
+def get_num_sent_messages(engine: sqlalchemy.engine.Engine) -> int:
+    with engine.connect() as conn:
+        number_sent = conn.execute(sqlalchemy.text("""
+            SELECT num_sent FROM kafka_sent
+            WHERE kafka_sent.id = 1
+        """)).fetchall()
+        if not number_sent:
+            return 0
+        return number_sent[0][0]
+
+def increase_num_sent_messages(engine: sqlalchemy.engine.Engine):
+    with engine.connect() as conn:
+        conn.execute(sqlalchemy.text("""
+            INSERT INTO kafka_sent (id, num_sent)
+            VALUES (1, 1)
+            ON CONFLICT (id) DO UPDATE
+            SET num_sent = kafka_sent.num_sent + 1;
+        """))
+        conn.commit()
+
 def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
     """Takes the original dataset and for each line generates a kafka order"""
+    offset = get_num_sent_messages(engine)
     df['order date (DateOrders)'] = pd.to_datetime(df['order date (DateOrders)'],
                                                    format='%m/%d/%Y %H:%M').dt.strftime('%Y/%m/%d %H:%M')
     df['shipping date (DateOrders)'] = pd.to_datetime(df['shipping date (DateOrders)'],
@@ -88,7 +109,7 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
         "Customer Country": "retailer_country"
     })
 
-    for order, retailer in zip(orders.itertuples(), retailers.itertuples()):
+    for order, retailer in zip(orders[offset:].itertuples(), retailers[offset:].itertuples()):
         with engine.connect() as conn:
             retailer_id = conn.execute(sqlalchemy.text(
                 'SELECT retailer_id from retailers '
@@ -103,6 +124,7 @@ def order_generator(df: pd.DataFrame, engine: sqlalchemy.engine.Engine):
             order_dict = order._asdict()
             order_dict["retailer_id"] = retailer_id
             del order_dict["Index"]
+        increase_num_sent_messages(engine)
         yield order_dict
 
 
