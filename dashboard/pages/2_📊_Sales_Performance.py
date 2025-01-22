@@ -11,9 +11,9 @@ from db_util import load_static_data
 from primary import process_orders
 
 # Page configuration
-st.set_page_config(page_title="Gross Sales Analysis", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Sales Performance Dashboard", page_icon="📊", layout="wide")
 
-st.markdown("# Gross Sales Analysis")
+st.markdown("# Sales Performance Dashboard")
 st.sidebar.header("Filter Options")
 
 
@@ -52,6 +52,35 @@ if start_date > end_date:
 # Filter orders based on the selected date range
 filtered_orders = filtered_orders[(filtered_orders["order_date"] >= pd.to_datetime(start_date)) &
                                   (filtered_orders["order_date"] <= pd.to_datetime(end_date))]
+total_sales = filtered_orders["gross_sales"].sum()
+total_units = filtered_orders["item_quantity"].sum()
+mean_order_value = total_sales/filtered_orders.shape[0]
+total_products = len(filtered_orders["product_name"].unique())
+# KPI section
+with st.container():
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+
+    kpi1.metric(
+        label="Total Sales Revenue 💰",
+        value=f"${round(total_sales/10**3, 2)}K",
+    )
+
+    kpi2.metric(
+        label="Total Units Sold 📦",
+        value=f"{round(total_units, 2)}",
+    )
+    kpi3.metric(
+        label="Total Products Sold 📦",
+        value=f"{round(total_products, 2)}",
+    )
+    
+    kpi4.metric(
+        label="Mean Order Price 💰",
+        value=f"${round(mean_order_value, 2)}",
+    )
+
+
+
 
 
 

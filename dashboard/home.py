@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 st.markdown("# Welcome to Supply Chain Optimization Dashboard")
-st.markdown("# Here You can monitor the performance of your supply chain")
+st.markdown("##### Here You can monitor the performance of your supply chain")
 
 st.sidebar.header("Filter Options")
 
@@ -33,7 +33,7 @@ st.session_state["retailers"] = retailers
 st.session_state["products"] = products
 st.session_state["inventory"] = inventory
 
-orders_df = process_orders(orders, retailers, products)
+orders_df = process_orders(orders, retailers, products, inventory)
 orders_df["order_date"] = pd.to_datetime(orders_df["order_date"])
 
 start_date = st.sidebar.date_input(
@@ -91,7 +91,7 @@ st.session_state["end_date"] = end_date
 if "orders_df" not in st.session_state:
     st.session_state["orders_df"] = orders_df
 
-if st.button("Apply Data Range and Reload Data"):
+if st.sidebar.button("Apply Data Range and Reload Data"):
     # Update session state for selected dates
     st.session_state["start_date"] = start_date
     st.session_state["end_date"] = end_date
@@ -115,31 +115,16 @@ if st.button("Apply Data Range and Reload Data"):
 # Get data from session state
 if "orders" in st.session_state:
     orders_df = st.session_state["orders"]
-    orders_df = process_orders(orders_df, retailers, products)
+    orders_df = process_orders(orders_df, retailers, products, inventory)
     st.session_state['orders_df'] = orders_df
 
 orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(
     1, 5, len(orders_df)
 )
 
-# Sidebar filters for multi-select
-selected_retailers = st.sidebar.multiselect(
-    "Select Retailers", orders_df["retailer_name"].unique()
-)
-selected_products = st.sidebar.multiselect(
-    "Select Products", orders_df["product_name"].unique()
-)
-
-# Apply filters based on selected retailer-product pair
 filtered_orders = orders_df
-if selected_retailers:
-    filtered_orders = filtered_orders[
-        filtered_orders["retailer_name"].isin(selected_retailers)
-    ]
-if selected_products:
-    filtered_orders = filtered_orders[
-        filtered_orders["product_name"].isin(selected_products)
-    ]
+
+
 
 
 
@@ -148,14 +133,14 @@ if selected_products:
 # Calculate KPIs for filtered data
 avg_shipping_days = filtered_orders["real_shipping_days"].mean()
 total_gross_sell = filtered_orders["gross_sales"].sum()
-# late_penalty_sum = filtered_orders["late_penalty"].sum()
+reorder_avg = filtered_orders["reorder_level"].mean()
 
 # Total count after filtering
 total_count = len(filtered_orders)
 
 # KPI section
 with st.container():
-    kpi1, kpi2, kpi3, _ = st.columns(4)
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
     kpi1.metric(
         label="Avg Shipping Days 📦",
@@ -164,91 +149,84 @@ with st.container():
 
     kpi2.metric(
         label="Total Gross Sell 💰",
-        value=f"${round(total_gross_sell, 2)}",
+        value=f"${round(total_gross_sell/10**6, 2)}M",
+    )
+    
+    kpi3.metric(
+        label="Mean Reorder Value 🔄",
+        value=f"{round(reorder_avg, 2)}",
     )
 
-    kpi3.metric(
-        label="Total Record 📋",
+    kpi4.metric(
+        label="Total Orders 📋",
         value=f"{round(total_count, 2)}",
     )
 
-    # kpi4.metric(
-    #     label="Total Late Penalty ⚠️",
-    #     value=f"${round(late_penalty_sum, 2)}",
-    # )
-
 # Visualizations section
 with st.container():
-    fig_col1, fig_col2, _ = st.columns(3)
+    fig_col3, fig_col2, fig_col1 = st.columns(3)
 
+    # Plot 1: Order Status Distribution
     with fig_col1:
-        if "order_status" in filtered_orders:
-            fig = px.histogram(
-                filtered_orders,
-                x="order_status",
-                title="Order Status Distribution",
-                color_discrete_sequence=["#636EFA"],
-            )
-            st.write(fig)
-
-    with fig_col2:
-        fig2 = px.box(
-            filtered_orders,
-            y="gross_sales",
-            title="Gross Sell Value by Orders",
-            color_discrete_sequence=["#EF553B"],
+        delivery_status_count = filtered_orders["delivery_status"].value_counts().sort_values(ascending=False)
+        
+        fig = px.bar(
+            delivery_status_count.index,
+            x="delivery_status",
+            y= delivery_status_count.values,
+            title="Order Status Distribution",
+            color=delivery_status_count.values,
+            height=400,
+            width=400,
         )
-        st.write(fig2)
+        fig.update_layout(
+            xaxis=dict(tickangle=45),  # Rotate x-axis labels
+            title=dict(font=dict(size=16)),
+        )
+        st.write(fig)
 
-    # with fig_col3:
-    #     if "order_date" in filtered_orders:
-    #         filtered_orders["order_date"] = pd.to_datetime(filtered_orders["order_date"])
-    #         filtered_orders["hour"] = filtered_orders["order_date"].dt.hour
-    #         hourly_sales = (
-    #             filtered_orders.groupby([filtered_orders["order_date"].dt.date, "hour"])["gross_sell_value"]
-    #             .sum()
-    #             .reset_index()
-    #         )
-    #         hourly_sales.columns = ["order_date", "hour", "gross_sales"]
-    #         hourly_sales["datetime"] = pd.to_datetime(hourly_sales["order_date"]) + pd.to_timedelta(hourly_sales["hour"], unit="h")
-    #         fig3 = px.line(
-    #             hourly_sales,
-    #             x="datetime",
-    #             y="gross_sales",
-    #             title="Gross Sales Over Hours",
-    #             markers=True,
-    #             labels={"gross_sales": "Gross Sales", "datetime": "Time"},
-    #         )
-    #         st.write(fig3)
-
-
-with st.container():
-    fig_col1, fig_col2 = st.columns(2)
-
-    with fig_col1:
+    # Plot 2: Top 10 Retailers and Quantity Sold
+    with fig_col2:
         df_retailers = (
             filtered_orders.groupby("retailer_name")["item_quantity"]
             .sum()
             .reset_index()
-        )
+        ).nlargest(10, "item_quantity")
+        
         fig = px.bar(
             df_retailers,
             x="retailer_name",
             y="item_quantity",
-            title="Count of Items Sold by Retailer",
-            color_discrete_sequence=["#636EFA"],
+            title="Top 10 Retailers and Quantity Sold",
+            color="item_quantity",
+            height=450,
+            width=600,  # Ensure consistent width
+        )
+        fig.update_layout(
+            xaxis=dict(tickangle=45),  # Rotate x-axis labels
+            title=dict(font=dict(size=16)),
         )
         st.write(fig)
 
-    with fig_col2:
-        df_productss = (
+    # Plot 3: Top 10 Sold Products
+    with fig_col3:
+        df_products = (
             filtered_orders.groupby("product_name")["item_quantity"].sum().reset_index()
-        )
+        ).nlargest(10, "item_quantity")
+        
         fig = px.bar(
-            df_productss,
+            df_products,
             x="product_name",
             y="item_quantity",
-            title="Count of Items Sold by Product",
-            color_discrete_sequence=["#636EFA"],
+            title="Top 10 Sold Products",
+            color="item_quantity",
+            height=500,
+            width=600,  # Ensure consistent width
+            labels={"product_name": "Product Name", "item_quantity": "Quantity Sold"},
+        )
+        fig.update_layout(
+            xaxis=dict(tickangle=45),  # Rotate x-axis labels
+            title=dict(font=dict(size=16)),
         )
         st.write(fig)
+

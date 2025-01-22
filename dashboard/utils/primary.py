@@ -13,17 +13,18 @@ SPARK_SERVER = os.getenv("SPARK_SERVER")
 SQL_ADDRESS = os.getenv("SQL_ADDRESS")
 
 
-def process_orders(orders_df, retailers, products):
+def process_orders(orders_df, retailers, products, inventory):
     """
     Joins orders with retailers and products and calculates gross sales.
     """
     # Join with retailers and products
     orders_df = orders_df.merge(retailers, on="retailer_id", how="left")
     orders_df = orders_df.merge(products, on="product_id", how="left")
+    orders_df = orders_df.merge(inventory, on=["product_id","retailer_id"], how="left")
     orders_df.sort_values(
         by="total_item_quantity", ascending=False, inplace=True, ignore_index=True
     )
-
+    
     # Add gross sales column
     orders_df["gross_sales"] = (
         orders_df["total_item_quantity"] * orders_df["product_price"]
@@ -46,6 +47,7 @@ def process_orders(orders_df, retailers, products):
             "order_date",
             "retailer_name",
             "retailer_country",
+            "retailer_state",
             "product_id",
             "retailer_id",
             "product_name",
@@ -57,6 +59,8 @@ def process_orders(orders_df, retailers, products):
             "scheduled_shipping_days",
             "delivery_status",
             "late_risk",
+            "quantity_on_hand",
+            "reorder_level"
         ]
     ]
     return orders_df
@@ -86,7 +90,7 @@ def get_forecast_results(payload):
     Returns:
     - dict: The parsed JSON response containing forecast results or an error message.
     """
-    forecast_api_url = "http://{SPARK_SERVER}/start-forecast"
+    forecast_api_url = f"http://{SPARK_SERVER}/start-forecast"
     try:
         response = requests.post(forecast_api_url, json=payload)
         response.raise_for_status()  # Raise an exception for HTTP errors

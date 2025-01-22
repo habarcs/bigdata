@@ -15,7 +15,7 @@ from datetime import datetime
 # Page configuration
 st.set_page_config(page_title="Historical Data and Demand Forecast", page_icon="📊", layout="wide")
 
-st.markdown("# Historical Data Visualization and Demand Prediction")
+st.markdown("# Historical Data Visualization")
 st.sidebar.header("Filter Options")
 
 # Load static data
@@ -122,6 +122,7 @@ if not filtered_orders.empty:
 
 
 if st.sidebar.button("Predict Demand"):
+    st.markdown("# Demand Forecast")
     if selected_products and selected_retailers:
         # Prepare the request payload
         product_ids = filtered_ids["product_id"].unique().tolist()
@@ -159,8 +160,9 @@ if st.sidebar.button("Predict Demand"):
 
                 # Separate forecasts by product
                 st.write("### Demand Forecast by Product")
-                product_forecasts = forecast_results.groupby(["ds", "product_name"])["item_quantity"].sum().reset_index()
+                product_forecasts = forecast_results.groupby(["ds", "product_name", "retailer_name"])["item_quantity"].sum().reset_index()
                 product_forecast_chart = (
+                alt.layer(
                     alt.Chart(product_forecasts)
                     .mark_line()
                     .encode(
@@ -168,16 +170,8 @@ if st.sidebar.button("Predict Demand"):
                         y="item_quantity:Q",
                         color="product_name:N",
                         tooltip=["ds:T", "product_name:N", "item_quantity:Q"],
-                    )
-                    .properties(title="Demand Forecast by Product", width=800, height=400)
-                )
-                st.altair_chart(product_forecast_chart, use_container_width=True)
-
-                # Separate forecasts by retailer
-                st.write("### Demand Forecast by Retailer")
-                retailer_forecasts = forecast_results.groupby(["ds", "retailer_name"])["item_quantity"].sum().reset_index()
-                retailer_forecast_chart = (
-                    alt.Chart(retailer_forecasts)
+                    ),
+                    alt.Chart(product_forecasts)
                     .mark_line()
                     .encode(
                         x="ds:T",
@@ -185,9 +179,27 @@ if st.sidebar.button("Predict Demand"):
                         color="retailer_name:N",
                         tooltip=["ds:T", "retailer_name:N", "item_quantity:Q"],
                     )
-                    .properties(title="Demand Forecast by Retailer", width=800, height=400)
                 )
-                st.altair_chart(retailer_forecast_chart, use_container_width=True)
+                .properties(title="Demand Forecast by Product and Retailer", width=800, height=400)
+                )
+
+                st.altair_chart(product_forecast_chart, use_container_width=True)
+
+                # Separate forecasts by retailer
+                # st.write("### Demand Forecast by Retailer")
+                # retailer_forecasts = forecast_results.groupby(["ds", "retailer_name"])["item_quantity"].sum().reset_index()
+                # retailer_forecast_chart = (
+                #     alt.Chart(retailer_forecasts)
+                #     .mark_line()
+                #     .encode(
+                #         x="ds:T",
+                #         y="item_quantity:Q",
+                #         color="retailer_name:N",
+                #         tooltip=["ds:T", "retailer_name:N", "item_quantity:Q"],
+                #     )
+                #     .properties(title="Demand Forecast by Retailer", width=800, height=400)
+                # )
+                # st.altair_chart(retailer_forecast_chart, use_container_width=True)
             else:
                 st.sidebar.warning("No forecast results returned from the API.")
 
