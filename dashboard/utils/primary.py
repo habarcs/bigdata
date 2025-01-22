@@ -2,6 +2,8 @@ import pandas as pd
 from kafka import KafkaProducer
 import json
 import requests
+import psycopg2
+import pandas as pd
 
 
 def process_orders(orders_df, retailers, products):
@@ -11,15 +13,28 @@ def process_orders(orders_df, retailers, products):
     # Join with retailers and products
     orders_df = orders_df.merge(retailers, on="retailer_id", how="left")
     orders_df = orders_df.merge(products, on="product_id", how="left")
-    orders_df.sort_values(by="item_quantity", ascending=False, inplace=True, ignore_index=True)
+    orders_df.sort_values(
+        by="total_item_quantity", ascending=False, inplace=True, ignore_index=True
+    )
 
     # Add gross sales column
-    orders_df["gross_sales"] = orders_df["item_quantity"] * orders_df["product_price"]
+    orders_df["gross_sales"] = (
+        orders_df["total_item_quantity"] * orders_df["product_price"]
+    )
+    orders_df.rename(
+        columns={
+            "ds": "order_date",
+            "total_item_quantity": "item_quantity",
+            "avg_real_shipping_days": "real_shipping_days",
+            "avg_scheduled_shipping_days": "scheduled_shipping_days",
+            "avg_late_risk": "late_risk",
+            },
+        inplace=True,
+    )
 
     # Select relevant columns
     orders_df = orders_df[
         [
-            "order_id",
             "order_date",
             "retailer_name",
             "retailer_country",
@@ -29,11 +44,10 @@ def process_orders(orders_df, retailers, products):
             "category",
             "item_quantity",
             "product_price",
-            "status",
-            "shipping_mode",
             "gross_sales",
             "real_shipping_days",
-            "delivery_status",
+            "scheduled_shipping_days",
+            "order_status",
             "late_risk",
         ]
     ]
@@ -53,22 +67,6 @@ def find_new_products(new_orders, old_orders):
     return new_product_ids
 
 
-
-# Function to publish messages to Kafka
-def publish_to_kafka(topic, message):
-    try:
-        producer = KafkaProducer(
-            bootstrap_servers="kafka:9092",
-            value_serializer=lambda v: json.dumps(v).encode("utf-8")
-        )
-        producer.send(topic, message)
-        producer.flush()
-        producer.close()
-    except Exception as e:
-        raise RuntimeError(f"Failed to publish message to Kafka: {str(e)}")
-    
-    
-
 def get_forecast_results(payload):
     """
     Fetch forecast results from the REST API.
@@ -87,3 +85,17 @@ def get_forecast_results(payload):
         return response.json()
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"Failed to fetch forecast results: {e}")
+
+
+def get_postgres_data(query):
+    conn = psycopg2.connect(
+        host="sql-database",
+        database="postgres",
+        user="postgres",
+        password="supersecret",
+    )
+    try:
+        df = pd.read_sql(query, conn)
+    finally:
+        conn.close()
+    return df
