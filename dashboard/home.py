@@ -10,10 +10,12 @@ from datetime import datetime, timedelta
 
 # Page configuration
 st.set_page_config(
-    page_title="Retailers and Products Streaming", page_icon="📊", layout="wide"
+    page_title="Supply Chain Management System", page_icon="📊", layout="wide"
 )
 
-st.markdown("# Retailers and Products Streaming Dashboard")
+st.markdown("# Welcome to Supply Chain Optimization Dashboard")
+st.markdown("# Here You can monitor the performance of your supply chain")
+
 st.sidebar.header("Filter Options")
 
 # Fetch data from the PostgreSQL database
@@ -26,8 +28,10 @@ AND (SELECT MAX(ds::DATE) FROM daily_aggregates);
 
 orders = get_postgres_data(query)
 retailers, products = load_static_data()
+inventory = get_postgres_data("SELECT * FROM inventory")
 st.session_state["retailers"] = retailers
 st.session_state["products"] = products
+st.session_state["inventory"] = inventory
 
 orders_df = process_orders(orders, retailers, products)
 orders_df["order_date"] = pd.to_datetime(orders_df["order_date"])

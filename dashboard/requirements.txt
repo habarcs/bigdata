@@ -5,3 +5,4 @@ kafka-python
 sqlalchemy
 psycopg2-binary
 plotly
+python-dotenv

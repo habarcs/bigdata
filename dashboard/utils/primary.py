@@ -4,6 +4,13 @@ import json
 import requests
 import psycopg2
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
+
+SPARK_SERVER = os.getenv("SPARK_SERVER")
+SQL_ADDRESS = os.getenv("SQL_ADDRESS")
 
 
 def process_orders(orders_df, retailers, products):
@@ -29,7 +36,7 @@ def process_orders(orders_df, retailers, products):
             "avg_scheduled_shipping_days": "scheduled_shipping_days",
             "avg_late_risk": "late_risk",
             "order_status": "delivery_status",
-            },
+        },
         inplace=True,
     )
 
@@ -79,7 +86,7 @@ def get_forecast_results(payload):
     Returns:
     - dict: The parsed JSON response containing forecast results or an error message.
     """
-    forecast_api_url = "http://spark:4040/start-forecast"
+    forecast_api_url = "http://{SPARK_SERVER}/start-forecast"
     try:
         response = requests.post(forecast_api_url, json=payload)
         response.raise_for_status()  # Raise an exception for HTTP errors
@@ -90,7 +97,8 @@ def get_forecast_results(payload):
 
 def get_postgres_data(query):
     conn = psycopg2.connect(
-        host="sql-database",
+        host=SQL_ADDRESS,
+        port="5432",
         database="postgres",
         user="postgres",
         password="supersecret",

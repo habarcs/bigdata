@@ -10,7 +10,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 
 from db_util import get_engine
-
+from kafka_consumer import kafka_realtime_consumer
 # Streamlit configuration
 st.set_page_config(
     page_title="Real-Time Supply Chain Dashboard",
@@ -18,14 +18,8 @@ st.set_page_config(
     layout="wide",
 )
 
-# Kafka Consumer setup
-consumer = KafkaConsumer(
-    'orders',
-    bootstrap_servers=['kafka:9092'],
-    auto_offset_reset='latest',
-    enable_auto_commit=True,
-    value_deserializer=lambda x: json.loads(x.decode('utf-8'))
-)
+
+consumer = kafka_realtime_consumer()
 
 # Dashboard title
 st.title("Real-Time Supply Chain Dashboard")

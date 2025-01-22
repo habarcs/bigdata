@@ -1,13 +1,18 @@
 import pandas as pd
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql+psycopg2://postgres:supersecret@sql-database:5432/postgres"
+load_dotenv()
+import os
+
+SQL_ADDRESS = os.getenv("SQL_ADDRESS")
 
 def get_engine():
     """
     Creates a SQLAlchemy engine for database interaction.
     """
-    return create_engine(DATABASE_URL)
+    return create_engine(f"postgresql+psycopg2://postgres:supersecret@{SQL_ADDRESS}:5432/postgres")
+
 
 def load_static_data():
     """
