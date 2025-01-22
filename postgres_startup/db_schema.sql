@@ -51,6 +51,11 @@ CREATE TABLE data_gen
     created boolean
 );
 
+CREATE TABLE kafka_sent (
+    id INT PRIMARY KEY DEFAULT 1,
+    num_sent INT NOT NULL DEFAULT 0
+);
+
 CREATE TABLE daily_aggregates
 (
     ds                          text                        NOT NULL,
