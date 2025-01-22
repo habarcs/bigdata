@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'u
 
 
 from db_util import load_static_data
-import process_orders
+from primary import process_orders
 
 # Page configuration
 st.set_page_config(page_title="Gross Sales Analysis", page_icon="📊", layout="wide")

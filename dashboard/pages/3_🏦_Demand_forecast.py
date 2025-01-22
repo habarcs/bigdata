@@ -70,31 +70,6 @@ forecast_duration = st.sidebar.selectbox(
 )
 filtered_ids = filtered_orders[["product_id", "retailer_id"]].drop_duplicates()
 
-# --- Line Plot: Gross Sales Over Time by Product ---
-if not filtered_orders.empty:
-    product_sales = (
-        filtered_orders.groupby(["order_date", "product_name"])["item_quantity"]
-        .sum()
-        .reset_index()
-    )
-
-    if not product_sales.empty:
-        product_chart = (
-            alt.Chart(product_sales)
-            .mark_line()
-            .encode(
-                x="order_date:T",
-                y="item_quantity:Q",
-                color="product_name:N",
-                tooltip=["order_date:T", "product_name:N", "item_quantity:Q"],
-            )
-            .properties(title="Total Product Sales Over Time")
-        )
-
-        st.altair_chart(product_chart, use_container_width=True)
-    else:
-        st.warning("No data available for the selected products to generate the product sales chart.")
-
 # --- Line Plot: Gross Sales Over Time by Retailer ---
 if not filtered_orders.empty:
     retailer_sales = (
@@ -121,6 +96,32 @@ if not filtered_orders.empty:
         st.warning("No data available for the selected retailers to generate the retailer sales chart.")
 
 
+# --- Line Plot: Gross Sales Over Time by Product ---
+if not filtered_orders.empty:
+    product_sales = (
+        filtered_orders.groupby(["order_date", "product_name"])["item_quantity"]
+        .sum()
+        .reset_index()
+    )
+
+    if not product_sales.empty:
+        product_chart = (
+            alt.Chart(product_sales)
+            .mark_line()
+            .encode(
+                x="order_date:T",
+                y="item_quantity:Q",
+                color="product_name:N",
+                tooltip=["order_date:T", "product_name:N", "item_quantity:Q"],
+            )
+            .properties(title="Total Product Sales Over Time")
+        )
+
+        st.altair_chart(product_chart, use_container_width=True)
+    else:
+        st.warning("No data available for the selected products to generate the product sales chart.")
+
+
 if st.sidebar.button("Predict Demand"):
     if selected_products and selected_retailers:
         # Prepare the request payload
@@ -135,9 +136,7 @@ if st.sidebar.button("Predict Demand"):
         }
 
         try:
-            # Fetch forecast results from the Flask API
-            forecast_api_url = "http://localhost:4040/start-forecast"
-            forecast_data = get_forecast_results(forecast_api_url, payload)
+            forecast_data = get_forecast_results(payload)
 
             if "forecast_results" in forecast_data and forecast_data["forecast_results"]:
                 forecast_results = pd.DataFrame(forecast_data["forecast_results"])

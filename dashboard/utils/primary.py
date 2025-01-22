@@ -69,7 +69,7 @@ def publish_to_kafka(topic, message):
     
     
 
-def get_forecast_results(api_url, payload):
+def get_forecast_results(payload):
     """
     Fetch forecast results from the REST API.
 
@@ -80,8 +80,9 @@ def get_forecast_results(api_url, payload):
     Returns:
     - dict: The parsed JSON response containing forecast results or an error message.
     """
+    forecast_api_url = "http://spark:4040/start-forecast"
     try:
-        response = requests.post(api_url, json=payload)
+        response = requests.post(forecast_api_url, json=payload)
         response.raise_for_status()  # Raise an exception for HTTP errors
         return response.json()
     except requests.exceptions.RequestException as e:
