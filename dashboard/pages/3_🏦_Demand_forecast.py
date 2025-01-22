@@ -160,9 +160,8 @@ if st.sidebar.button("Predict Demand"):
 
                 # Separate forecasts by product
                 st.write("### Demand Forecast by Product")
-                product_forecasts = forecast_results.groupby(["ds", "product_name", "retailer_name"])["item_quantity"].sum().reset_index()
+                product_forecasts = forecast_results.groupby(["ds", "product_name"])["item_quantity"].sum().reset_index()
                 product_forecast_chart = (
-                alt.layer(
                     alt.Chart(product_forecasts)
                     .mark_line()
                     .encode(
@@ -170,8 +169,16 @@ if st.sidebar.button("Predict Demand"):
                         y="item_quantity:Q",
                         color="product_name:N",
                         tooltip=["ds:T", "product_name:N", "item_quantity:Q"],
-                    ),
-                    alt.Chart(product_forecasts)
+                    )
+                    .properties(title="Demand Forecast by Product", width=800, height=400)
+                )
+                st.altair_chart(product_forecast_chart, use_container_width=True)
+
+                # Separate forecasts by retailer
+                st.write("### Demand Forecast by Retailer")
+                retailer_forecasts = forecast_results.groupby(["ds", "retailer_name"])["item_quantity"].sum().reset_index()
+                retailer_forecast_chart = (
+                    alt.Chart(retailer_forecasts)
                     .mark_line()
                     .encode(
                         x="ds:T",
@@ -179,11 +186,9 @@ if st.sidebar.button("Predict Demand"):
                         color="retailer_name:N",
                         tooltip=["ds:T", "retailer_name:N", "item_quantity:Q"],
                     )
+                    .properties(title="Demand Forecast by Retailer", width=800, height=400)
                 )
-                .properties(title="Demand Forecast by Product and Retailer", width=800, height=400)
-                )
-
-                st.altair_chart(product_forecast_chart, use_container_width=True)
+                st.altair_chart(retailer_forecast_chart, use_container_width=True)
 
                 # Separate forecasts by retailer
                 # st.write("### Demand Forecast by Retailer")

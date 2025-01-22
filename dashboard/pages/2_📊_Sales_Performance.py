@@ -1,7 +1,8 @@
+import plotly.express as px
 import streamlit as st
 import pandas as pd
 import altair as alt
-
+import numpy as np
 import sys 
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
@@ -84,37 +85,23 @@ with st.container():
 
 
 
-# --- Matrix Plot: Total Items Sold by Retailer and Product ---
-if not filtered_orders.empty:
-    matrix_data = (
-        filtered_orders.groupby(["retailer_name", "product_name"])["item_quantity"]
-        .sum()
-        .reset_index()
+# Add calculated columns if not already present
+if "gross_sell_value" not in orders_df:
+    orders_df["gross_sell_value"] = (
+        orders_df["item_quantity"] * np.random.uniform(10, 100, len(orders_df))
     )
 
-    if not matrix_data.empty:
-        matrix_chart = (
-            alt.Chart(matrix_data)
-            .mark_rect()
-            .encode(
-                x=alt.X("retailer_name:N", title="Retailer"),
-                y=alt.Y("product_name:N", title="Product"),
-                color=alt.Color("item_quantity:Q", title="Total Items Sold"),
-                tooltip=["retailer_name:N", "product_name:N", "item_quantity:Q"],
-            )
-            .properties(
-                title="Total Items Sold by Retailer and Product",
-                width=800,
-                height=400,
-            )
-        )
+if "late_penalty" not in orders_df:
+    orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(5, 20, len(orders_df))
 
-        st.altair_chart(matrix_chart, use_container_width=True)
-    else:
-        st.warning("No data available to generate the matrix plot.")
+
+if "category" in filtered_orders:
+    category_sales = filtered_orders.groupby("category")["gross_sell_value"].sum().reset_index()
+    fig1 = px.bar(category_sales, x="category", y="gross_sell_value", title="Gross Sales by Category", color="category")
+    st.write(fig1)
 else:
-    st.warning("No data available for the selected filters.")
-
+    st.write("Category data is not available.")
+    
 
 # --- Line Plot: Gross Sales Over Time by Product ---
 if not filtered_orders.empty:
@@ -165,3 +152,57 @@ if not filtered_orders.empty:
         st.altair_chart(retailer_chart, use_container_width=True)
     else:
         st.warning("No data available for the selected retailers to generate the retailer sales chart.")
+
+
+# --- Matrix Plot: Total Items Sold by Retailer and Product ---
+if not filtered_orders.empty:
+    matrix_data = (
+        filtered_orders.groupby(["retailer_name", "product_name"])["item_quantity"]
+        .sum()
+        .reset_index()
+    )
+
+    if not matrix_data.empty:
+        matrix_chart = (
+            alt.Chart(matrix_data)
+            .mark_rect()
+            .encode(
+                x=alt.X("retailer_name:N", title="Retailer"),
+                y=alt.Y("product_name:N", title="Product"),
+                color=alt.Color("item_quantity:Q", title="Total Items Sold"),
+                tooltip=["retailer_name:N", "product_name:N", "item_quantity:Q"],
+            )
+            .properties(
+                title="Total Items Sold by Retailer and Product",
+                width=800,
+                height=400,
+            )
+        )
+
+        st.altair_chart(matrix_chart, use_container_width=True)
+    else:
+        st.warning("No data available to generate the matrix plot.")
+else:
+    st.warning("No data available for the selected filters.")
+
+
+if "retailer_name" in filtered_orders:
+    retailer_sales = filtered_orders.groupby("retailer_name")["gross_sell_value"].sum().reset_index()
+    fig2 = px.treemap(retailer_sales, path=["retailer_name"], values="gross_sell_value", title="Retailer Performance")
+    st.write(fig2)
+else:
+    st.write("Retailer data is not available.")
+
+
+if all(col in filtered_orders for col in ["product_name", "gross_sell_value", "category"]):
+    fig8 = px.box(
+        filtered_orders,
+        x="product_name",
+        y="gross_sell_value",
+        color="category",
+        title="Profitability by Product",
+        labels={"product_name": "Product", "gross_sell_value": "Gross Sales"},
+    )
+    st.write(fig8)
+else:
+    st.write("Required data for product profitability is not available.")
