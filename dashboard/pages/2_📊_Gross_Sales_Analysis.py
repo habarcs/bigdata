@@ -16,8 +16,6 @@ st.set_page_config(page_title="Gross Sales Analysis", page_icon="📊", layout="
 st.markdown("# Gross Sales Analysis")
 st.sidebar.header("Filter Options")
 
-# Load static data
-retailers, products = load_static_data()
 
 # Load orders data from session state
 if "orders_df" not in st.session_state:
@@ -25,7 +23,6 @@ if "orders_df" not in st.session_state:
     st.stop()
 
 orders_df = st.session_state["orders_df"]
-orders_df = process_orders(orders_df, retailers, products)
 
 # Sidebar filters for multi-select
 selected_retailers = st.sidebar.multiselect("Select Retailers", orders_df["retailer_name"].unique())

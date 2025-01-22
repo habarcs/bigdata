@@ -28,6 +28,7 @@ def process_orders(orders_df, retailers, products):
             "avg_real_shipping_days": "real_shipping_days",
             "avg_scheduled_shipping_days": "scheduled_shipping_days",
             "avg_late_risk": "late_risk",
+            "order_status": "delivery_status",
             },
         inplace=True,
     )
@@ -47,7 +48,7 @@ def process_orders(orders_df, retailers, products):
             "gross_sales",
             "real_shipping_days",
             "scheduled_shipping_days",
-            "order_status",
+            "delivery_status",
             "late_risk",
         ]
     ]

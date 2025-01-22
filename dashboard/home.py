@@ -24,12 +24,12 @@ WHERE ds::DATE BETWEEN (SELECT MAX(ds::DATE) FROM daily_aggregates) - INTERVAL '
 AND (SELECT MAX(ds::DATE) FROM daily_aggregates);
 """
 
-orders_df = get_postgres_data(query)
+orders = get_postgres_data(query)
 retailers, products = load_static_data()
 st.session_state["retailers"] = retailers
 st.session_state["products"] = products
 
-orders_df = process_orders(orders_df, retailers, products)
+orders_df = process_orders(orders, retailers, products)
 orders_df["order_date"] = pd.to_datetime(orders_df["order_date"])
 
 start_date = st.sidebar.date_input(
@@ -106,11 +106,13 @@ if st.button("Apply Data Range and Reload Data"):
         new_orders = get_postgres_data(query)
         progress.progress(100)
 
-        st.session_state["orders_df"] = new_orders
+        st.session_state["orders"] = new_orders
 
 # Get data from session state
-orders_df = st.session_state["orders_df"]
-orders_df = process_orders(orders_df, retailers, products)
+if "orders" in st.session_state:
+    orders_df = st.session_state["orders"]
+    orders_df = process_orders(orders_df, retailers, products)
+    st.session_state['orders_df'] = orders_df
 
 orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(
     1, 5, len(orders_df)

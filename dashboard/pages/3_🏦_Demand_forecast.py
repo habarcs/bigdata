@@ -27,7 +27,6 @@ if "orders_df" not in st.session_state:
     st.stop()
 
 orders_df = st.session_state["orders_df"]
-orders_df = process_orders(orders_df, retailers, products)
 
 # Sidebar filters for multi-select
 selected_retailers = st.sidebar.multiselect("Select Retailers", orders_df["retailer_name"].unique())
