@@ -9,14 +9,56 @@ import plotly.express as px
 from datetime import datetime, timedelta
 
 # Page configuration
-st.set_page_config(page_title="Retailers and Products Streaming", page_icon="📊", layout="wide")
+st.set_page_config(
+    page_title="Retailers and Products Streaming", page_icon="📊", layout="wide"
+)
 
 st.markdown("# Retailers and Products Streaming Dashboard")
 st.sidebar.header("Filter Options")
 
-# Date adjustment function
+# Fetch data from the PostgreSQL database
+query = """
+SELECT *
+FROM daily_aggregates
+WHERE ds::DATE BETWEEN (SELECT MAX(ds::DATE) FROM daily_aggregates) - INTERVAL '30 days'
+AND (SELECT MAX(ds::DATE) FROM daily_aggregates);
+"""
+
+orders_df = get_postgres_data(query)
+retailers, products = load_static_data()
+st.session_state["retailers"] = retailers
+st.session_state["products"] = products
+
+orders_df = process_orders(orders_df, retailers, products)
+orders_df["order_date"] = pd.to_datetime(orders_df["order_date"])
+
+start_date = st.sidebar.date_input(
+    "Start Date",
+    value=(
+        orders_df["order_date"].min().date()
+        if not orders_df.empty
+        else datetime(2015, 1, 1).date()
+    ),
+)
+end_date = st.sidebar.date_input(
+    "End Date",
+    value=(
+        orders_df["order_date"].max().date()
+        if not orders_df.empty
+        else datetime(2025, 1, 30).date()
+    ),
+)
+
+# Initialize session state for dates if not already set
+if "start_date" not in st.session_state:
+    st.session_state["start_date"] = pd.to_datetime(start_date)
+if "end_date" not in st.session_state:
+    st.session_state["end_date"] = pd.to_datetime(end_date)
+
 def adjust_date_range(date_range):
-    end_date = datetime.today()
+    # Use session state for end_date, fallback if not present
+    end_date = st.session_state.get("end_date", pd.Timestamp("2025-01-30"))
+    # Compute start_date based on the selected range
     if date_range == "Previous 15 Days":
         start_date = end_date - timedelta(days=15)
     elif date_range == "Previous Week":
@@ -26,62 +68,41 @@ def adjust_date_range(date_range):
     elif date_range == "Previous Year":
         start_date = end_date - timedelta(days=365)
     else:
-        start_date = end_date - timedelta(days=30)  
-    return start_date, end_date
+        # Default to Previous Month
+        start_date = end_date - timedelta(days=30)
+    return max(start_date, pd.Timestamp("2015-01-01")), end_date
 
-
-
-# Sidebar for date range selection
+# Date range selection with proper session state handling
 date_range = st.sidebar.selectbox(
-    "Select Date Range", ["Previous Week", "Previous 15 Days", "Previous Month", "Previous Year"]
+    "Select Date Range",
+    ["Previous Week", "Previous 15 Days", "Previous Month", "Previous Year"],
 )
 start_date, end_date = adjust_date_range(date_range)
 
-
-
-# Initialize session state for dates if not already set
-if "start_date" not in st.session_state:
-    st.session_state["start_date"] = start_date
-if "end_date" not in st.session_state:
-    st.session_state["end_date"] = end_date
-# Fetch data from the PostgreSQL database
-query = """
-SELECT *
-FROM daily_aggregates
-WHERE ds::DATE BETWEEN (SELECT MAX(ds::DATE) FROM daily_aggregates) - INTERVAL '30 days'
-AND (SELECT MAX(ds::DATE) FROM daily_aggregates);
-"""
-
-
-orders_df = get_postgres_data(query)
-print(orders_df.shape)
-
-
-# Load static data
-retailers, products = load_static_data()
+# Update session state for dates
+st.session_state["start_date"] = start_date
+st.session_state["end_date"] = end_date
 
 # State to control data loading
 if "orders_df" not in st.session_state:
     st.session_state["orders_df"] = orders_df
-    st.session_state['retailers'] = retailers
-    st.session_state['products'] = products
 
-# Reload data button with progress bar
 if st.button("Apply Data Range and Reload Data"):
+    # Update session state for selected dates
     st.session_state["start_date"] = start_date
     st.session_state["end_date"] = end_date
-    # Fetch data from the PostgreSQL database
+    # Fetch filtered data
     query = f"""
     SELECT *
     FROM daily_aggregates
-    WHERE ds BETWEEN '{st.session_state["start_date"].strftime('%Y-%m-%d')}'
+    WHERE ds::DATE BETWEEN '{st.session_state["start_date"].strftime('%Y-%m-%d')}'
     AND '{st.session_state["end_date"].strftime('%Y-%m-%d')}';
     """
     with st.spinner("Reloading data..."):
         progress = st.progress(0)
-        for i in range(100):
-            time.sleep(0.01)  # Simulate progress
-            progress.progress(i + 1)
+        for i in range(0, 101, 10):
+            time.sleep(0.05)
+            progress.progress(i)
         new_orders = get_postgres_data(query)
         progress.progress(100)
 
@@ -91,18 +112,32 @@ if st.button("Apply Data Range and Reload Data"):
 orders_df = st.session_state["orders_df"]
 orders_df = process_orders(orders_df, retailers, products)
 
-orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(1, 5, len(orders_df))
+orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(
+    1, 5, len(orders_df)
+)
 
 # Sidebar filters for multi-select
-selected_retailers = st.sidebar.multiselect("Select Retailers", orders_df["retailer_name"].unique())
-selected_products = st.sidebar.multiselect("Select Products", orders_df["product_name"].unique())
+selected_retailers = st.sidebar.multiselect(
+    "Select Retailers", orders_df["retailer_name"].unique()
+)
+selected_products = st.sidebar.multiselect(
+    "Select Products", orders_df["product_name"].unique()
+)
 
 # Apply filters based on selected retailer-product pair
 filtered_orders = orders_df
 if selected_retailers:
-    filtered_orders = filtered_orders[filtered_orders["retailer_name"].isin(selected_retailers)]
+    filtered_orders = filtered_orders[
+        filtered_orders["retailer_name"].isin(selected_retailers)
+    ]
 if selected_products:
-    filtered_orders = filtered_orders[filtered_orders["product_name"].isin(selected_products)]
+    filtered_orders = filtered_orders[
+        filtered_orders["product_name"].isin(selected_products)
+    ]
+
+
+
+
 
 # Calculate KPIs for filtered data
 avg_shipping_days = filtered_orders["real_shipping_days"].mean()
@@ -130,7 +165,7 @@ with st.container():
         label="Total Record 📋",
         value=f"{round(total_count, 2)}",
     )
-    
+
     # kpi4.metric(
     #     label="Total Late Penalty ⚠️",
     #     value=f"${round(late_penalty_sum, 2)}",
@@ -182,10 +217,14 @@ with st.container():
 
 
 with st.container():
-    fig_col1, fig_col2  = st.columns(2)
+    fig_col1, fig_col2 = st.columns(2)
 
     with fig_col1:
-        df_retailers = filtered_orders.groupby("retailer_name")["item_quantity"].sum().reset_index()
+        df_retailers = (
+            filtered_orders.groupby("retailer_name")["item_quantity"]
+            .sum()
+            .reset_index()
+        )
         fig = px.bar(
             df_retailers,
             x="retailer_name",
@@ -194,9 +233,11 @@ with st.container():
             color_discrete_sequence=["#636EFA"],
         )
         st.write(fig)
-        
+
     with fig_col2:
-        df_productss = filtered_orders.groupby("product_name")["item_quantity"].sum().reset_index()
+        df_productss = (
+            filtered_orders.groupby("product_name")["item_quantity"].sum().reset_index()
+        )
         fig = px.bar(
             df_productss,
             x="product_name",
