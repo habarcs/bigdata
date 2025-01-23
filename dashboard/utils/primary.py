@@ -93,6 +93,8 @@ def get_forecast_results(payload):
         response.raise_for_status()  # Raise an exception for HTTP errors
         return response.json()
     except requests.exceptions.RequestException as e:
+        if e.response.status_code == 418:
+            raise RuntimeError("Not enough data to generate forecast results!")
         raise RuntimeError(f"Failed to fetch forecast results: {e}")
 
 

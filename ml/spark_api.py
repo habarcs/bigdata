@@ -4,7 +4,7 @@ from spark import main
 from flask import Flask, request, jsonify
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Create Flask app
@@ -18,6 +18,7 @@ def start_forecast():
     try:
         # Parse request data
         data = request.json
+        logger.info(f"Received forecast request: {data}")
         product_ids = data.get("product_ids")
         retailer_ids = data.get("retailer_ids")
         start_date = data.get("start_date")
@@ -27,7 +28,6 @@ def start_forecast():
         if not product_ids or not retailer_ids or not start_date or not end_date:
             return jsonify({"error": "Missing required parameters"}), 400
 
-        logger.info(f"Received forecast request: {data}")
 
         forecast_results = main(product_ids, retailer_ids, start_date, end_date, forecast_duration)
 
@@ -38,7 +38,7 @@ def start_forecast():
             }), 200
         else:
             logger.warning("No forecast results generated.")
-            return jsonify({"message": "No forecast results generated."}), 204
+            return jsonify({"error": "No forecast results generated."}), 418
 
     except Exception as e:
         logger.error(f"Error in /start-forecast: {e}")
