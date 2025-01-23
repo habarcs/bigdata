@@ -30,7 +30,7 @@ selected_retailers = st.sidebar.multiselect("Select Retailers", orders_df["retai
 selected_products = st.sidebar.multiselect("Select Products", orders_df["product_name"].unique())
 
 # Apply filters
-filtered_orders = orders_df
+filtered_orders = orders_df.copy(deep=True)
 if selected_retailers:
     filtered_orders = filtered_orders[filtered_orders["retailer_name"].isin(selected_retailers)]
 if selected_products:
@@ -85,19 +85,14 @@ with st.container():
 
 
 
-# Add calculated columns if not already present
-if "gross_sell_value" not in orders_df:
-    orders_df["gross_sell_value"] = (
-        orders_df["item_quantity"] * np.random.uniform(10, 100, len(orders_df))
-    )
 
-if "late_penalty" not in orders_df:
+if "late_penalty" not in orders_df.columns:
     orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(5, 20, len(orders_df))
 
 
 if "category" in filtered_orders:
-    category_sales = filtered_orders.groupby("category")["gross_sell_value"].sum().reset_index()
-    fig1 = px.bar(category_sales, x="category", y="gross_sell_value", title="Gross Sales by Category", color="category")
+    category_sales = filtered_orders.groupby("category")["gross_sales"].sum().reset_index()
+    fig1 = px.bar(category_sales, x="category", y="gross_sales", title="Gross Sales by Category", color="category")
     st.write(fig1)
 else:
     st.write("Category data is not available.")
@@ -187,21 +182,21 @@ else:
 
 
 if "retailer_name" in filtered_orders:
-    retailer_sales = filtered_orders.groupby("retailer_name")["gross_sell_value"].sum().reset_index()
-    fig2 = px.treemap(retailer_sales, path=["retailer_name"], values="gross_sell_value", title="Retailer Performance")
+    retailer_sales = filtered_orders.groupby("retailer_name")["gross_sales"].sum().reset_index()
+    fig2 = px.treemap(retailer_sales, path=["retailer_name"], values="gross_sales", title="Retailer Performance")
     st.write(fig2)
 else:
     st.write("Retailer data is not available.")
 
 
-if all(col in filtered_orders for col in ["product_name", "gross_sell_value", "category"]):
+if all(col in filtered_orders for col in ["product_name", "gross_sales", "category"]):
     fig8 = px.box(
         filtered_orders,
         x="product_name",
-        y="gross_sell_value",
+        y="gross_sales",
         color="category",
         title="Profitability by Product",
-        labels={"product_name": "Product", "gross_sell_value": "Gross Sales"},
+        labels={"product_name": "Product", "gross_sales": "Gross Sales"},
     )
     st.write(fig8)
 else:
