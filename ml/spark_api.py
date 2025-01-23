@@ -1,9 +1,7 @@
-from flask import Flask, request, jsonify
 import logging
-import os
-from pyspark.sql.types import IntegerType
-from pyspark.sql.functions import col, when
-from spark import SparkDataProcessAndForecast  # Import the class from spark.py
+from spark import main
+
+from flask import Flask, request, jsonify
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -31,40 +29,9 @@ def start_forecast():
 
         logger.info(f"Received forecast request: {data}")
 
-        # Initialize Spark pipeline
-        pipeline = SparkDataProcessAndForecast()
-        parsed_stream = pipeline.read_kafka_stream()
+        forecast_results = main(product_ids, retailer_ids, start_date, end_date, forecast_duration)
 
-        # Connect to Postgres with retry
-        customer_data, product_data, retailer_data = pipeline.connect_to_postgresql_with_retry()
-
-        enriched_stream = pipeline.enrich_data(
-            parsed_stream, customer_data, product_data, retailer_data
-        )
-
-        # Write to memory + wait for job to finish
-        final_enriched_df = pipeline.wait_for_data_and_collect(
-            enriched_stream, start_date, end_date, product_ids, retailer_ids
-        )
-
-        # Additional transformations
-        final_df = pipeline.preprocessing(final_enriched_df)
-
-        # Perform forecast
-        result = pipeline.prophet_forecast(final_df, forecast_duration)
-
-        if result:
-            # Format and return results
-            formatted_result = result.withColumn(
-                "yhat",
-                when(col("yhat") < 0, 0).otherwise(col("yhat").cast(IntegerType()))
-            ).withColumnRenamed("yhat", "item_quantity")
-
-            # Collect and convert to JSON
-            forecast_results = formatted_result.select(
-                "ds", "product_id", "retailer_id", "item_quantity"
-            ).toPandas().to_dict(orient="records")
-
+        if forecast_results:
             return jsonify({
                 "message": "Forecast job completed successfully.",
                 "forecast_results": forecast_results
@@ -80,4 +47,4 @@ def start_forecast():
 
 if __name__ == "__main__":
     # Run the Flask app
-    app.run(host="0.0.0.0", port=4040)
+    app.run(host="0.0.0.0", port=9003)

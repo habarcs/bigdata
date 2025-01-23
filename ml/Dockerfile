@@ -35,7 +35,7 @@ COPY spark_api.py /app/spark_api.py
 COPY spark.py /app/spark.py
 
 # Expose the Flask API port
-EXPOSE 4040
+EXPOSE 9003
 
 # Set the default command to run the Flask API
 CMD ["python", "/app/spark_api.py"]

@@ -100,7 +100,7 @@ services:
     command: >
       python /app/spark_api.py  
     ports:
-      - "4040:4040"
+      - "9003:9003"
     environment:
       - SPARK_OPTS=--driver-java-options=-Duser.timezone=UTC
       - PYSPARK_PYTHON=python3
