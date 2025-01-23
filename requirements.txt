@@ -2,3 +2,4 @@
 -r processing/requirements.txt
 -r ml/requirements.txt
 -r ui/requirements.txt
+-r dashboard/requirements.txt

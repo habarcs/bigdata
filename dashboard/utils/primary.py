@@ -1,9 +1,6 @@
 import pandas as pd
-from kafka import KafkaProducer
-import json
-import requests
 import psycopg2
-import pandas as pd
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()

@@ -85,7 +85,6 @@ services:
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
 
-
   spark:
     build:
       context: ./ml
@@ -105,13 +104,12 @@ services:
       - SPARK_OPTS=--driver-java-options=-Duser.timezone=UTC
       - PYSPARK_PYTHON=python3
 
-
   dashboard:
     build:
-      context: ./dashboard 
-      dockerfile: Dockerfile  
+      context: ./dashboard
+      dockerfile: Dockerfile
     ports:
-      - "8501:8501"  
+      - "8501:8501"
     depends_on:
       data-gen:
         condition: service_healthy
