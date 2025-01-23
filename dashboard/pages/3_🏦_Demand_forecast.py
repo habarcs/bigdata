@@ -130,8 +130,8 @@ if st.sidebar.button("Predict Demand"):
         payload = {
             "product_ids": product_ids,
             "retailer_ids": retailer_ids,
-            "start_date": start_date.strftime("%Y-%m-%d"),
-            "end_date": end_date.strftime("%Y-%m-%d"),
+            "start_date": start_date.strftime("%Y/%m/%d"),
+            "end_date": end_date.strftime("%Y/%m/%d"),
             "forecast_duration": forecast_duration,
         }
 
