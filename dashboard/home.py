@@ -1,12 +1,13 @@
-import streamlit as st
-from utils.kafka_consumer import consume_kafka_data
-from utils.db_util import load_static_data
-from utils.primary import process_orders, find_new_products, get_postgres_data
-import pandas as pd
-import numpy as np
 import time
-import plotly.express as px
 from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+
+from utils.db_util import load_static_data
+from utils.primary import process_orders, get_postgres_data
 
 # Page configuration
 st.set_page_config(

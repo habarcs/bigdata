@@ -43,13 +43,13 @@ if selected_products:
 filtered_orders["order_date"] = pd.to_datetime(filtered_orders["order_date"])
 
 # Sidebar filters for date range
-st.sidebar.header("Date Range")
 if filtered_orders.order_date.count() > 0:
+    st.sidebar.header("Date Range")
     start_date = st.sidebar.date_input("Start Date", value=filtered_orders["order_date"].min())
     end_date = st.sidebar.date_input("End Date", value=filtered_orders["order_date"].max())
 else:
-    start_date = st.sidebar.date_input("Start Date", "today")
-    end_date = st.sidebar.date_input("End Date", "today")
+    st.error("No orders were found for these retailers and products.")
+    st.stop()
     
 # Validate the date range
 if start_date > end_date:
