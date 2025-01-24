@@ -1,4 +1,4 @@
-pyspark==3.5.4
+pyspark
 prophet
 pandas
 flask
