@@ -1,5 +1,5 @@
 ---
-name: best_big_data_project
+name: supply_chain_big_data
 
 services:
   kafka:

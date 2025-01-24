@@ -20,12 +20,12 @@ docker compose up -d --build
 To connect to psql and interact with postgresql (the name of the container may be different):
 
 ```bash
-docker exec -it best_big_data_project-sql-database-1 psql -U postgres
+docker exec -it supply_chain_big_data-sql-database-1 psql -U postgres
 ```
 
 To connect to kafka and interact with the message queues (the name of the container may be different):
 ```bash
-docker exec -it best_big_data_project-kafka-1 bash
+docker exec -it supply_chain_big_data-kafka-1 bash
 ```
 The relevant programs are found in the /opt/kafka/bin/ directory
 For example to list the messages in the order topic the user should run the following command:
