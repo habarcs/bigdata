@@ -34,5 +34,5 @@ For example to list the messages in the order topic the user should run the foll
 ```
 
 ## Use of the graphical user interface
-The Main window is available on localhost:5000 after the setup has finished
+The Main window is available on localhost:8501 after the setup has finished
 Here the user is able to check the inventory for each retailer and look for historical and predicted future daily demands.
