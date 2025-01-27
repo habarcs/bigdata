@@ -3,8 +3,7 @@ The program provides an end-to-end solution for processing and analyzing order d
 It is able to handle multiple retailers and products, handles the data of customers and processes and manages orders in a scalable manner.
 
 ## Implementation details
-For more information about the specific components and their workings check the paper:
-TODO add the link for the paper
+For more information about the specific components and their workings check the [paper](https://github.com/habarcs/bigdata/blob/master/BigDataReport.pdf).
 
 ## Requirements
 - docker 
