@@ -1,9 +1,12 @@
-# Demand Prediction for Supply Chain Management
-The program provides an end-to-end solution for processing and analyzing order data with inventory management and demand fluctuation capabilities.
-It is able to handle multiple retailers and products, handles the data of customers and processes and manages orders in a scalable manner.
+# Supply Chain Management System
+This project proposes a system for the efficient processing of high-volume supply chain data, with a primary focus on streaming order data, by utilizing an appropriate integration of advanced big data technologies. The system is capable of delivering real-time key performance indicators, accurate demand forecasts, and comprehensive analytical insights, thereby enabling informed decision-making and operational optimization.
 
 ## Implementation details
-For more information about the specific components and their workings check the [paper](https://github.com/habarcs/bigdata/blob/master/BigDataReport.pdf).
+Our system leverages several big data technologies such as Apache Kafka for real-time messaging and data streaming, Apache Flink for distributed processing, Apache Spark and Facebook Prophet for machine learning, PostgreSQL for data storage, and Docker Compose for containerized orchestration. Each stage in the pipeline is modular, enabling seamless integration and scalability.
+
+![System Architecture](https://github.com/habarcs/bigdata/blob/master/System%20Architecture.png)
+
+For more information about the specific components and their functionality, please refer to the [report](https://github.com/habarcs/bigdata/blob/master/BigDataReport.pdf).
 
 ## Requirements
 - docker 
@@ -33,5 +36,5 @@ For example to list the messages in the order topic the user should run the foll
 ```
 
 ## Use of the graphical user interface
-The Main window is available on localhost:8501 after the setup has finished
-Here the user is able to check the inventory for each retailer and look for historical and predicted future daily demands.
+The final dashboard is available on localhost:8501 after the setup has finished.
+Here the user is able to monitor key performance indicators (KPIs) and visual analytics for inventory, sales, and delivery performance. Additionally, the dashboard provides demand forecasts derived from predictive models, enabling informed decision-making. Real-time streaming capabilities allow for dynamic visualization of changes in sales, ensuring up-to-date monitoring and insights.
