@@ -1,16 +1,14 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-import requests  # For making HTTP requests to the Flask API
-
+import time
 import sys 
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 
 
 from db_util import load_static_data
-from primary import get_forecast_results, process_orders
-from datetime import datetime
+from primary import get_forecast_results
 
 # Page configuration
 st.set_page_config(page_title="Historical Data and Demand Forecast", page_icon="📊", layout="wide")
@@ -40,7 +38,7 @@ if selected_products:
     filtered_orders = filtered_orders[filtered_orders["product_name"].isin(selected_products)]
 
 # Ensure order_date is a datetime type
-filtered_orders["order_date"] = pd.to_datetime(filtered_orders["order_date"])
+filtered_orders.loc[:,"order_date"] = pd.to_datetime(filtered_orders["order_date"])
 
 # Sidebar filters for date range
 if filtered_orders.order_date.count() > 0:
@@ -82,9 +80,12 @@ if not filtered_orders.empty:
             alt.Chart(retailer_sales)
             .mark_line()
             .encode(
-                x="order_date:T",
-                y="item_quantity:Q",
-                color="retailer_name:N",
+                x=alt.X("order_date:T", axis=alt.Axis(title="Order Date")),
+                y=alt.Y("item_quantity:Q", axis=alt.Axis(title="Total Items Sold")),
+                color=alt.Color(
+                    "retailer_name:N", 
+                    legend=alt.Legend(title="Retailers")  
+                ),
                 tooltip=["order_date:T", "retailer_name:N", "item_quantity:Q"],
             )
             .properties(title="Total Product Sold Over Time by Retailer")
@@ -108,9 +109,12 @@ if not filtered_orders.empty:
             alt.Chart(product_sales)
             .mark_line()
             .encode(
-                x="order_date:T",
-                y="item_quantity:Q",
-                color="product_name:N",
+                x=alt.X("order_date:T", axis=alt.Axis(title="Order Date")),
+                y=alt.Y("item_quantity:Q", axis=alt.Axis(title="Total Items Sold")),
+                color=alt.Color(
+                    "product_name:N", 
+                    legend=alt.Legend(title="Products") 
+                ),
                 tooltip=["order_date:T", "product_name:N", "item_quantity:Q"],
             )
             .properties(title="Total Product Sales Over Time")
@@ -136,7 +140,13 @@ if st.sidebar.button("Predict Demand"):
         }
 
         try:
-            forecast_data = get_forecast_results(payload)
+            with st.spinner("Generating Demand Prediction..."):
+                progress = st.progress(0)
+                for i in range(0, 101, 10):
+                    time.sleep(0.05)
+                    progress.progress(i)
+                forecast_data = get_forecast_results(payload)
+                progress.progress(100)
 
             if "forecast_results" in forecast_data and forecast_data["forecast_results"]:
                 forecast_results = pd.DataFrame(forecast_data["forecast_results"])
@@ -165,9 +175,12 @@ if st.sidebar.button("Predict Demand"):
                     alt.Chart(product_forecasts)
                     .mark_line()
                     .encode(
-                        x="ds:T",
-                        y="item_quantity:Q",
-                        color="product_name:N",
+                        x=alt.X("ds:T", axis=alt.Axis(title="Date")),
+                        y=alt.Y("item_quantity:Q", axis=alt.Axis(title="Total Items To Be Sold")),
+                        color=alt.Color(
+                            "product_name:N", 
+                            legend=alt.Legend(title="Products") 
+                        ),
                         tooltip=["ds:T", "product_name:N", "item_quantity:Q"],
                     )
                     .properties(title="Demand Forecast by Product", width=800, height=400)
@@ -181,30 +194,18 @@ if st.sidebar.button("Predict Demand"):
                     alt.Chart(retailer_forecasts)
                     .mark_line()
                     .encode(
-                        x="ds:T",
-                        y="item_quantity:Q",
-                        color="retailer_name:N",
+                        x=alt.X("ds:T", axis=alt.Axis(title="Date")),
+                        y=alt.Y("item_quantity:Q", axis=alt.Axis(title="Total Items To Be Sold")),
+                        color=alt.Color(
+                            "retailer_name:N", 
+                            legend=alt.Legend(title="Retailers") 
+                        ),
                         tooltip=["ds:T", "retailer_name:N", "item_quantity:Q"],
                     )
                     .properties(title="Demand Forecast by Retailer", width=800, height=400)
                 )
                 st.altair_chart(retailer_forecast_chart, use_container_width=True)
 
-                # Separate forecasts by retailer
-                # st.write("### Demand Forecast by Retailer")
-                # retailer_forecasts = forecast_results.groupby(["ds", "retailer_name"])["item_quantity"].sum().reset_index()
-                # retailer_forecast_chart = (
-                #     alt.Chart(retailer_forecasts)
-                #     .mark_line()
-                #     .encode(
-                #         x="ds:T",
-                #         y="item_quantity:Q",
-                #         color="retailer_name:N",
-                #         tooltip=["ds:T", "retailer_name:N", "item_quantity:Q"],
-                #     )
-                #     .properties(title="Demand Forecast by Retailer", width=800, height=400)
-                # )
-                # st.altair_chart(retailer_forecast_chart, use_container_width=True)
             else:
                 st.sidebar.warning("No forecast results returned from the API.")
 
@@ -213,4 +214,3 @@ if st.sidebar.button("Predict Demand"):
     else:
         st.sidebar.error("Please select at least one product and one retailer.")
 
-# Add your previous historical data plots here, such as "Total Items Sold by Retailer and Product"

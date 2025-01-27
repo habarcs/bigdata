@@ -3,13 +3,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import numpy as np
-import sys 
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
 
-
-from db_util import load_static_data
-from primary import process_orders
 
 # Page configuration
 st.set_page_config(page_title="Sales Performance Dashboard", page_icon="📊", layout="wide")
@@ -91,63 +85,12 @@ if "late_penalty" not in orders_df.columns:
 
 
 if "category" in filtered_orders:
-    category_sales = filtered_orders.groupby("category")["gross_sales"].sum().reset_index()
-    fig1 = px.bar(category_sales, x="category", y="gross_sales", title="Gross Sales by Category", color="category")
+    category_sales = filtered_orders.groupby("category")["gross_sales"].sum().reset_index().sort_values("gross_sales", ascending=False)
+    fig1 = px.bar(category_sales, x="category", y="gross_sales", title="Gross Sales by Category", labels={"category": "Category", "gross_sales": "Gross Sales"})
     st.write(fig1)
 else:
     st.write("Category data is not available.")
     
-
-# --- Line Plot: Gross Sales Over Time by Product ---
-if not filtered_orders.empty:
-    product_sales = (
-        filtered_orders.groupby(["order_date", "product_name"])["item_quantity"]
-        .sum()
-        .reset_index()
-    )
-
-    if not product_sales.empty:
-        product_chart = (
-            alt.Chart(product_sales)
-            .mark_line()
-            .encode(
-                x="order_date:T",
-                y="item_quantity:Q",
-                color="product_name:N",
-                tooltip=["order_date:T", "product_name:N", "item_quantity:Q"],
-            )
-            .properties(title="Total Product Sales Over Time")
-        )
-
-        st.altair_chart(product_chart, use_container_width=True)
-    else:
-        st.warning("No data available for the selected products to generate the product sales chart.")
-
-# --- Line Plot: Gross Sales Over Time by Retailer ---
-if not filtered_orders.empty:
-    retailer_sales = (
-        filtered_orders.groupby(["order_date", "retailer_name"])["item_quantity"]
-        .sum()
-        .reset_index()
-    )
-
-    if not retailer_sales.empty:
-        retailer_chart = (
-            alt.Chart(retailer_sales)
-            .mark_line()
-            .encode(
-                x="order_date:T",
-                y="item_quantity:Q",
-                color="retailer_name:N",
-                tooltip=["order_date:T", "retailer_name:N", "item_quantity:Q"],
-            )
-            .properties(title="Total Product Sold Over Time by Retailer")
-        )
-
-        st.altair_chart(retailer_chart, use_container_width=True)
-    else:
-        st.warning("No data available for the selected retailers to generate the retailer sales chart.")
-
 
 # --- Matrix Plot: Total Items Sold by Retailer and Product ---
 if not filtered_orders.empty:
@@ -169,8 +112,8 @@ if not filtered_orders.empty:
             )
             .properties(
                 title="Total Items Sold by Retailer and Product",
-                width=800,
-                height=400,
+                width=900,
+                height=450,
             )
         )
 
@@ -181,14 +124,6 @@ else:
     st.warning("No data available for the selected filters.")
 
 
-if "retailer_name" in filtered_orders:
-    retailer_sales = filtered_orders.groupby("retailer_name")["gross_sales"].sum().reset_index()
-    fig2 = px.treemap(retailer_sales, path=["retailer_name"], values="gross_sales", title="Retailer Performance")
-    st.write(fig2)
-else:
-    st.write("Retailer data is not available.")
-
-
 if all(col in filtered_orders for col in ["product_name", "gross_sales", "category"]):
     fig8 = px.box(
         filtered_orders,
@@ -197,7 +132,32 @@ if all(col in filtered_orders for col in ["product_name", "gross_sales", "catego
         color="category",
         title="Profitability by Product",
         labels={"product_name": "Product", "gross_sales": "Gross Sales"},
+        height=700,
     )
     st.write(fig8)
 else:
     st.write("Required data for product profitability is not available.")
+
+
+if "retailer_name" in filtered_orders and "product_name" in filtered_orders:
+    retailer_product_sales = filtered_orders.groupby(["retailer_name", "product_name"])["gross_sales"].sum().reset_index()
+
+    retailer_product_sales["gross_sales_log"] = np.log(retailer_product_sales["gross_sales"])
+    retailer_product_sales["gross_sales_log"] = retailer_product_sales["gross_sales_log"].replace([np.inf, -np.inf, np.nan], 0)
+
+    fig2 = px.treemap(
+        retailer_product_sales,
+        path=["retailer_name", "product_name"],  # Hierarchy: Retailer -> Product
+        values="gross_sales",  # Gross sales for size
+        title="Retailer Performance with Products",
+        color="gross_sales_log",  # Use log scale for color
+        color_continuous_scale="Viridis",  # Color scale
+        hover_data={"gross_sales": ":,.2f"},  # Format hover data
+    )
+
+    # Display treemap in Streamlit
+    st.plotly_chart(fig2, use_container_width=True)
+else:
+    st.write("Retailer or product data is not available.")
+
+

@@ -1,21 +1,15 @@
 import streamlit as st
-import pandas as pd
 import altair as alt
-import sys
-import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
-from db_util import load_static_data
 
-# Page configuration
-st.set_page_config(page_title="Inventory Dashboard", page_icon="📦", layout="wide")
+st.set_page_config(page_title="Inventory Management", page_icon="📦", layout="wide")
 
-st.markdown("# Inventory Dashboard")
+st.markdown("# Inventory Management Dashboard")
 st.sidebar.header("Filter Options")
 
 # Load inventory data
 if "inventory" not in st.session_state:
-    st.error("Inventory data not found. Please go to the dashboard and reload data.")
+    st.error("Inventory data not found. Please go to the Dashboard and reload data.")
     st.stop()
 
 inventory = st.session_state["inventory"]
@@ -51,7 +45,7 @@ with kpi1:
     below_reorder = filtered_inventory[filtered_inventory["quantity_on_hand"] < filtered_inventory["reorder_level"]]
     total_products = len(filtered_inventory)
     below_reorder_percentage = (len(below_reorder) / total_products) * 100 if total_products > 0 else 0
-    st.metric("Items Below Reorder Level", f"{len(below_reorder)} ({below_reorder_percentage:.2f}%)")
+    st.metric("Items Below Reorder Level", f"{below_reorder_percentage:.2f}%")
 
 # Overstocked products
 with kpi2:
@@ -80,10 +74,10 @@ st.write("\n")
 st.subheader("Stock Levels by Product")
 
 if not filtered_inventory.empty:
-    filtered_inventory_a = filtered_inventory.drop_duplicates(subset=["product_id"], keep="first")
+    filtered_inventory_a = filtered_inventory.drop_duplicates(subset=["product_id"], keep="first").copy()
     
     # Add a custom column for the label
-    filtered_inventory_a["stock_status"] = filtered_inventory_a.apply(
+    filtered_inventory_a.loc[:,"stock_status"] = filtered_inventory_a.apply(
         lambda row: "Low Stock" if row["quantity_on_hand"] < row["reorder_level"] else "High Stock",
         axis=1
     )
@@ -112,7 +106,7 @@ else:
 # 3. Critical Products Table
 if not below_reorder.empty:
     st.subheader("Critical Products Below Reorder Level")
-    st.dataframe(below_reorder[["product_id", "retailer_id", "quantity_on_hand", "reorder_level"]], width=1200)
+    st.dataframe(below_reorder[["product_name","product_id", "retailer_name","retailer_id", "quantity_on_hand", "reorder_level"]], width=1200)
 else:
     st.info("No products are currently below reorder level.")
 

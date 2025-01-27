@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from kafka import KafkaConsumer
-import json
 import sys 
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
@@ -94,14 +92,45 @@ for message in consumer:
             )
             st.write(fig)
 
+        import plotly.express as px
+
         with fig_col2:
-            fig2 = px.box(
-                data_df,
-                y="gross_sell_value",
-                title="Gross Sell Value by Orders",
-                color_discrete_sequence=["#EF553B"],
+            # Sorting product IDs by the mean gross sell value for better interpretability
+            sorted_data_df = data_df.copy()
+            sorted_data_df["product_id"] = sorted_data_df["product_id"].astype(str)
+            sorted_data_df = sorted_data_df.sort_values(
+                by=["gross_sell_value"], ascending=False
             )
+
+            fig2 = px.box(
+                sorted_data_df,
+                x="product_id",
+                y="gross_sell_value",
+                title="Gross Sell Value by Product ID",
+                color_discrete_sequence=["#636EFA"],
+                points="all",  # Show all data points
+                labels={"product_id": "Product ID", "gross_sell_value": "Gross Sell Value"},
+                template="plotly_white",  # Clean and modern template
+            )
+
+            fig2.update_layout(
+                title={
+                    "text": "Gross Sell Value by Product ID",
+                    "y": 0.9,
+                    "x": 0.5,
+                    "xanchor": "center",
+                    "yanchor": "top",
+                },
+                xaxis=dict(
+                    title="Product ID",
+                    tickangle=-45,  
+                ),
+                yaxis=dict(title="Gross Sell Value ($)"),
+                boxmode="group",
+            )
+
             st.write(fig2)
+
 
         with fig_col3:
             data_df["hour"] = data_df["order_date"].dt.hour
@@ -118,7 +147,7 @@ for message in consumer:
                 y="gross_sales",
                 title="Gross Sales Over Hours",
                 markers=True,
-                labels={"gross_sales": "Gross Sales", "datetime": "Time"},
+                labels={"gross_sales": "Gross Sales ($)", "datetime": "Time"},
             )
             st.write(fig3)
 

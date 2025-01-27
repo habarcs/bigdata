@@ -1,6 +1,8 @@
 import pandas as pd
 import psycopg2
 import requests
+from sqlalchemy import create_engine
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -99,15 +101,11 @@ def get_forecast_results(payload):
 
 
 def get_postgres_data(query):
-    conn = psycopg2.connect(
-        host=SQL_ADDRESS,
-        port="5432",
-        database="postgres",
-        user="postgres",
-        password="supersecret",
-    )
+    # Create a SQLAlchemy engine
+    engine = create_engine(f"postgresql+psycopg2://postgres:supersecret@{SQL_ADDRESS}:5432/postgres")
     try:
-        df = pd.read_sql(query, conn)
+        with engine.connect() as connection:
+            df = pd.read_sql(query, engine)
     finally:
-        conn.close()
+        engine.dispose()
     return df

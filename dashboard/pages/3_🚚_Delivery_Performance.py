@@ -60,9 +60,12 @@ if not filtered_deliveries.empty:
         alt.Chart(filtered_deliveries)
         .mark_line()
         .encode(
-            x=alt.X("order_date:T", title="order_date"),
+            x=alt.X("order_date:T", title="Order Date"),
             y=alt.Y("count():Q", title="Number of Deliveries"),
-            color="delivery_status",
+            color=alt.Color(
+                            "delivery_status", 
+                            legend=alt.Legend(title="Delivery Status"), 
+                        ),
             tooltip=["order_date:T", "delivery_status", "count()"]
         )
     )
@@ -80,7 +83,10 @@ if not filtered_deliveries.empty:
         .encode(
             x=alt.X("retailer_state:N", title="Region"),
             y=alt.Y("count():Q", title="Number of Deliveries"),
-            color="delivery_status",
+            color=alt.Color(
+                            "delivery_status", 
+                            legend=alt.Legend(title="Delivery Status"), 
+                        ),
             tooltip=["retailer_state", "delivery_status", "count()"]
         )
     )
@@ -89,7 +95,7 @@ else:
     st.warning("No data available for regional performance.")
 
 # --- Critical Delays Table ---
-st.subheader("Delayed Deliveries Details")
+st.subheader("Cancelled Deliveries Details")
 
 if not delayed_deliveries.empty:
     st.dataframe(delayed_deliveries[["retailer_id","product_id", "retailer_state", "delivery_status"]], width=1200)

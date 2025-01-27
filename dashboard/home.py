@@ -13,9 +13,19 @@ from utils.primary import process_orders, get_postgres_data
 st.set_page_config(
     page_title="Supply Chain Management System", page_icon="📊", layout="wide"
 )
-
 st.markdown("# Welcome to Supply Chain Optimization Dashboard")
-st.markdown("##### Here You can monitor the performance of your supply chain")
+
+st.markdown("""
+##### This dashboard is organized into sections that help you monitor and optimize key aspects of your supply chain performance:
+
+- **Inventory Management**: Track stock levels, reorder items, and identify overstocked or understocked products.
+- **Demand Forecasting**: Predict future product demand to improve stock planning.
+- **Delivery Performance**: Monitor on-time deliveries, track delayed shipments, and analyze regional performance.
+- **Sales Performance**: Analyze sales trends and performance across products and retailers.
+- **Real-Time Streaming**: Visualize live supply chain data streaming with changing KPIs and metrics.
+
+""")
+st.text("\n\n")
 
 st.sidebar.header("Filter Options")
 
@@ -92,7 +102,7 @@ st.session_state["end_date"] = end_date
 if "orders_df" not in st.session_state:
     st.session_state["orders_df"] = orders_df
 
-if st.sidebar.button("Apply Data Range and Reload Data"):
+if st.sidebar.button("Apply Filters and Reload Dashboard"):
     # Update session state for selected dates
     st.session_state["start_date"] = start_date
     st.session_state["end_date"] = end_date
@@ -123,25 +133,20 @@ orders_df["late_penalty"] = orders_df.get("late_risk", 0) * np.random.uniform(
     1, 5, len(orders_df)
 )
 
-filtered_orders = orders_df
-
-
-
-
+filtered_orders = orders_df.copy(deep=True)
 
 
 
 # Calculate KPIs for filtered data
 avg_shipping_days = filtered_orders["real_shipping_days"].mean()
 total_gross_sell = filtered_orders["gross_sales"].sum()
-reorder_avg = filtered_orders["reorder_level"].mean()
 
 # Total count after filtering
 total_count = len(filtered_orders)
 
 # KPI section
 with st.container():
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    kpi1, kpi2, kpi3 = st.columns(3)
 
     kpi1.metric(
         label="Avg Shipping Days 📦",
@@ -152,13 +157,8 @@ with st.container():
         label="Total Gross Sell 💰",
         value=f"${round(total_gross_sell/10**6, 2)}M",
     )
-    
-    kpi3.metric(
-        label="Mean Reorder Value 🔄",
-        value=f"{round(reorder_avg, 2)}",
-    )
 
-    kpi4.metric(
+    kpi3.metric(
         label="Total Orders 📋",
         value=f"{round(total_count, 2)}",
     )
@@ -176,14 +176,15 @@ with st.container():
             x="delivery_status",
             y= delivery_status_count.values,
             title="Order Status Distribution",
-            color=delivery_status_count.values,
             height=400,
             width=400,
+            labels={"y": "Count", "delivery_status": "Delivery Status Type"},
         )
         fig.update_layout(
             xaxis=dict(tickangle=45),  # Rotate x-axis labels
             title=dict(font=dict(size=16)),
         )
+        
         st.write(fig)
 
     # Plot 2: Top 10 Retailers and Quantity Sold
@@ -199,14 +200,15 @@ with st.container():
             x="retailer_name",
             y="item_quantity",
             title="Top 10 Retailers and Quantity Sold",
-            color="item_quantity",
             height=450,
             width=600,  # Ensure consistent width
+            labels={"retailer_name": "Retailer Name", "item_quantity": "Quantity Sold"},
         )
         fig.update_layout(
             xaxis=dict(tickangle=45),  # Rotate x-axis labels
             title=dict(font=dict(size=16)),
         )
+        
         st.write(fig)
 
     # Plot 3: Top 10 Sold Products
@@ -220,7 +222,6 @@ with st.container():
             x="product_name",
             y="item_quantity",
             title="Top 10 Sold Products",
-            color="item_quantity",
             height=500,
             width=600,  # Ensure consistent width
             labels={"product_name": "Product Name", "item_quantity": "Quantity Sold"},
